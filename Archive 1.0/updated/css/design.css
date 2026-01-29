@@ -53,9 +53,7 @@
 .checkmark {
   height: 20px;
   width: 20px;
-  background-color: #fafafa;
-  border-style: solid;
-  border-width: 1px;
+  background-color: #eee;
   border-radius: 6px; 
   margin-right: 12px;
   transition: all 0.3s ease; 
@@ -100,10 +98,4 @@
 
 #forgotpassbtn{
   width: 150px;
-}
-
-#reclink{
-  /* border-style: solid; */
-  display: flex;
-  justify-content: center;
 }
