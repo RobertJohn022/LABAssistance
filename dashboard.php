@@ -62,7 +62,7 @@ $ordersResult = $stmt->get_result();
                     <?php while ($order = $ordersResult->fetch_assoc()): ?>
 
                         <div class="card mb-3 shadow-sm border-0 rounded-3">
-                            <div class="card-body">
+                            <div class="card-body border border-danger">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
                                         <h5 class="fw-bold mb-0">Order #<?php echo $order['order_id']; ?></h5>
@@ -71,9 +71,16 @@ $ordersResult = $stmt->get_result();
                                     <span class="badge bg-primary rounded-pill"><?php echo $order['status']; ?></span>
                                 </div>
 
-                                <div class="mb-3">
-                                    <p class="mb-1 small text-muted"><i class="bi bi-basket-fill me-1"></i> <?php echo $order['bag_counts']; ?></p>
-                                    <p class="mb-0 small text-muted"><i class="bi bi-tag-fill me-1"></i> <?php echo $order['services_requested']; ?></p>
+                                <!-- ORDERS LIST -->
+                                <div class="mb-3 d-flex justify-content-between">
+                                    <div class="border border-danger">
+                                        <p class="mb-1 small text-muted"><i class="bi bi-basket-fill me-1"></i> <?php echo $order['bag_counts']; ?></p>
+                                        <p class="mb-0 small text-muted"><i class="bi bi-tag-fill me-1"></i> <?php echo $order['services_requested']; ?></p>
+                                    </div>
+
+                                    <div class="border border-warning">
+                                        <p>Timer Bitch</p>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
@@ -103,12 +110,20 @@ $ordersResult = $stmt->get_result();
                                         ?>
                                         <ul class="list-group mb-4">
                                             <?php while ($load = $loads->fetch_assoc()): ?>
-                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center border border-danger">
                                                     <div>
                                                         <strong><?php echo $load['bag_label']; ?></strong>
                                                         <div class="small text-muted"><?php echo $load['load_category']; ?></div>
                                                     </div>
-                                                    <span class="badge bg-secondary"><?php echo $load['status']; ?></span>
+                                                    <div class="d-flex flex-column">
+                                                        <span class="badge bg-secondary"><?php echo $load['status']; ?></span>
+                                                        <div class="border border-primary text-end">
+                                                            <?php
+                                                            $duration = "00:10";
+                                                            $_SESSION["start_time"] = date("i:s");
+                                                            ?>
+                                                        </div>
+                                                    </div>
                                                 </li>
                                             <?php endwhile; ?>
                                         </ul>

@@ -237,6 +237,16 @@ $result = $conn->query($query);
                         </div>
                     </form>
 
+                    <div id="timerContainer" class="border rounded bg-white text-center">
+                        <div id="modalTimerDisplay" class="display-5 mb-2">00:00</div>
+                        <div class="btn-group w-100">
+                            <button type="button" class="btn btn-outline-dark btn-sm" onclick="updateTimerDB('reset')">Start / Reset</button>
+                            <button type="button" id="modalPauseBtn" class="btn btn-outline-dark btn-sm" onclick="togglePause()">Pause</button>
+                            <button type="button" class="btn btn-outline-dark btn-sm" onclick="updateTimerDB('finish')">Finish now</button>
+                        </div>
+                    </div>
+
+
                     <hr class="my-4">
                     <h6 class="fw-bold small text-muted text-uppercase mb-3">Log</h6>
                     <div id="logContainer" class="bg-light p-3 rounded-3 small border" style="max-height: 150px; overflow-y: auto;">
@@ -266,6 +276,75 @@ $result = $conn->query($query);
                 .then(response => response.text())
                 .then(data => container.innerHTML = data)
                 .catch(err => container.innerHTML = '<div class="text-danger text-center">Error loading logs.</div>');
+        }
+
+        // TIMER SCRIPT
+        var statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        let timerInterval;
+        let timeLeft = 0;
+        let isPaused = false;
+
+        // Run timer
+        function openUpdateModal(loadId, bagLabel, currentStatus) {
+            document.getElementById('modalLoadId').value = loadId;
+            document.getElementById('modalBagLabel').innerText = bagLabel;
+            document.getElementById('modalStatusSelect').value = currentStatus;
+
+            fetchLogs(loadId);
+            initTimer(loadId);
+            statusModal.show();
+        }
+
+        // Get time from database
+        function initTimer(loadId) {
+            clearInterval(timerInterval); // Reset timer
+            fetch(`backend/timer_action.php?action=get&load_id=${loadId}`) // Remaining time from db
+                .then(res => res.json())
+                .then(data => {
+                    timeLeft = data.remaining;
+                    startCountdown();
+                });
+        }
+
+        // Start timer / Decrease each second
+        function startCountdown() {
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                if (!isPaused && timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+
+        // Display
+        function updateTimerDisplay() {
+            const el = document.getElementById('modalTimerDisplay');
+            if (timeLeft <= 0) {
+                el.innerText = "00:00";
+                return;
+            }
+            let mins = Math.floor(timeLeft / 60);
+            let secs = timeLeft % 60;
+            el.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Pause
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
+        }
+
+        // Timer button functions
+        function updateTimerDB(action) {
+            const loadId = document.getElementById('modalLoadId').value;
+            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
+                .then(res => res.json())
+                .then(data => {
+                    timeLeft = data.remaining;
+                    if (action === 'reset') isPaused = false;
+                    updateTimerDisplay();
+                });
         }
     </script>
 </body>
