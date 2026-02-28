@@ -237,6 +237,7 @@ $result = $conn->query($query);
                         </div>
                     </form>
 
+                    <!-- TIMER -->
                     <div id="timerContainer" class="border rounded bg-white text-center">
                         <div id="modalTimerDisplay" class="display-5 mb-2">00:00</div>
                         <div class="btn-group w-100">
@@ -280,6 +281,11 @@ $result = $conn->query($query);
 
         // TIMER SCRIPT
         var statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        document.getElementById('statusModal').addEventListener('hidden.bs.modal', function() {
+            console.log("Modal closed. Stopping background timer.");
+            clearInterval(timerInterval);
+        });
+
         let timerInterval;
         let timeLeft = 0;
         let isPaused = false;
@@ -295,6 +301,26 @@ $result = $conn->query($query);
             statusModal.show();
         }
 
+        // TOGGLE PAUSE
+        function togglePause() {
+            const loadId = document.getElementById('modalLoadId').value;
+            const action = isPaused ? 'resume' : 'pause';
+
+            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
+                .then(res => res.json())
+                .then(data => {
+                    isPaused = !isPaused;
+                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
+                    timeLeft = data.remaining;
+
+                    if (!isPaused) {
+                        startCountdown(); // Restart the interval if resuming
+                    } else {
+                        clearInterval(timerInterval); // Stop interval locally if pausing
+                    }
+                });
+        }
+
         // Get time from database
         function initTimer(loadId) {
             clearInterval(timerInterval); // Reset timer
@@ -302,19 +328,72 @@ $result = $conn->query($query);
                 .then(res => res.json())
                 .then(data => {
                     timeLeft = data.remaining;
-                    startCountdown();
+                    isPaused = data.is_paused;
+                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
+                    updateTimerDisplay();
+                    if (!isPaused && timeLeft > 0) {
+                        startCountdown();
+                    }
                 });
         }
 
-        // Start timer / Decrease each second
+        // Start timer 
         function startCountdown() {
+            const loadId = document.getElementById('modalLoadId').value;
             updateTimerDisplay();
+
+            // Clear any existing interval to prevent "double speed" timers
+            clearInterval(timerInterval);
+
             timerInterval = setInterval(() => {
-                if (!isPaused && timeLeft > 0) {
+                if (isPaused) return;
+
+                if (timeLeft > 0) {
                     timeLeft--;
                     updateTimerDisplay();
                 }
+
+                // Check for zero OUTSIDE the timeLeft > 0 block
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    console.log("Timer hit zero. Triggering autoCycleStatus for ID:", loadId);
+                    autoCycleStatus(loadId);
+                }
             }, 1000);
+        }
+
+        // Update database
+        function autoCycleStatus(loadId) {
+            const formData = new URLSearchParams();
+            formData.append('load_id', loadId);
+
+            fetch('backend/auto_cycle_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString()
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log("DB Update Success:", data.next_status);
+                        document.getElementById('modalStatusSelect').value = data.next_status;
+
+                        // Refresh timer for the next stage if not finished
+                        if (!data.is_final) {
+                            updateTimerDB('reset');
+                        } else {
+                            document.getElementById('modalTimerDisplay').innerText = "DONE";
+                        }
+                    } else {
+                        console.error("DB Update Failed:", data.message);
+                        alert("Error: " + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error("Network/Server Error:", err);
+                });
         }
 
         // Display
@@ -324,6 +403,7 @@ $result = $conn->query($query);
                 el.innerText = "00:00";
                 return;
             }
+            // FIX: Changed 20 to 60 for standard minutes/seconds
             let mins = Math.floor(timeLeft / 60);
             let secs = timeLeft % 60;
             el.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

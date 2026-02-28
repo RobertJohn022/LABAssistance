@@ -79,7 +79,7 @@ $ordersResult = $stmt->get_result();
                                     </div>
 
                                     <div class="border border-warning">
-                                        <p>Timer Bitch</p>
+                                        <p>Timer Setup?</p>
                                     </div>
                                 </div>
 

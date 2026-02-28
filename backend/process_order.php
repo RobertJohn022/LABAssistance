@@ -89,6 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($stmt->execute()) {
         $stmt->close();
 
+        // TIMER WORK HERE:
         // --- F. INSERT INDIVIDUAL LOADS (PROCESS_LOAD) ---
         // Each bag gets the specific granular status 'Pending Dropoff'
         $loadInsert = $conn->prepare("INSERT INTO `Process_Load` (order_id, load_category, bag_label, status) VALUES (?, ?, ?, 'Pending Dropoff')");
