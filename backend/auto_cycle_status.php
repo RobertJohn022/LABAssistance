@@ -1,5 +1,5 @@
 <?php
-require 'db_conn.php'; // Check if this path is correct!
+require 'db_conn.php';
 header('Content-Type: application/json');
 
 $load_id = isset($_POST['load_id']) ? intval($_POST['load_id']) : 0;
@@ -26,8 +26,16 @@ if ($load_id > 0) {
 
         if (isset($status_cycle[$next_index])) {
             $next_status = $status_cycle[$next_index];
-            $stmt = $conn->prepare("UPDATE Process_Load SET status = ? WHERE load_id = ?");
-            $stmt->bind_param("si", $next_status, $load_id);
+
+            $durations = [
+                'Washing' => 10,
+                'Drying'  => 20,
+                'Folding' => 5
+            ];
+            $next_timer = $durations[$next_status] ?? 0;
+
+            $stmt = $conn->prepare("UPDATE process_load SET status = ?, timer_paused = ?, end_time = NULL WHERE load_id = ?");
+            $stmt->bind_param("sii", $next_status, $next_timer, $load_id);
             $stmt->execute();
 
             echo json_encode([

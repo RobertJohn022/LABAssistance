@@ -81,8 +81,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- E. INSERT MAIN ORDER ---
     // Note: Main Order status acts as a summary. It starts at 'Pending Dropoff'
     $stmt = $conn->prepare("INSERT INTO `Order` 
-        (order_id, customer_id, customer_name, tracking_code, services_requested, supplies_requested, bag_counts, customer_note, estimated_price, final_price, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Dropoff')");
+        (order_id, customer_id, customer_name, tracking_code, services_requested, supplies_requested, bag_counts, customer_note, estimated_price, final_price) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     $stmt->bind_param("sissssssdd", $order_id, $customer_id, $customer_name, $tracking_code, $services_str, $supplies_str, $bag_counts, $note, $estimated_price, $final_price);
 

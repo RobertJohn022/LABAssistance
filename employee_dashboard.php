@@ -241,8 +241,8 @@ $result = $conn->query($query);
                     <div id="timerContainer" class="border rounded bg-white text-center">
                         <div id="modalTimerDisplay" class="display-5 mb-2">00:00</div>
                         <div class="btn-group w-100">
-                            <button type="button" class="btn btn-outline-dark btn-sm" onclick="updateTimerDB('reset')">Start / Reset</button>
-                            <button type="button" id="modalPauseBtn" class="btn btn-outline-dark btn-sm" onclick="togglePause()">Pause</button>
+                            <button type="button" class="btn btn-outline-dark btn-sm" onclick="updateTimerDB('reset')">Reset</button>
+                            <button type="button" id="modalPauseBtn" class="btn btn-outline-dark btn-sm" onclick="togglePause()">Start</button>
                             <button type="button" class="btn btn-outline-dark btn-sm" onclick="updateTimerDB('finish')">Finish now</button>
                         </div>
                     </div>
@@ -261,12 +261,17 @@ $result = $conn->query($query);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         var statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        // TIMER STUFF:
+        let timerInterval;
+        let timeLeft = 0;
+        let isPaused = true;
 
         function openUpdateModal(loadId, bagLabel, currentStatus) {
             document.getElementById('modalLoadId').value = loadId;
             document.getElementById('modalBagLabel').innerText = bagLabel;
             document.getElementById('modalStatusSelect').value = currentStatus;
             fetchLogs(loadId);
+            initTimer(loadId); // For timer
             statusModal.show();
         }
 
@@ -279,58 +284,25 @@ $result = $conn->query($query);
                 .catch(err => container.innerHTML = '<div class="text-danger text-center">Error loading logs.</div>');
         }
 
-        // TIMER SCRIPT
-        var statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        // Stop timer on pause
         document.getElementById('statusModal').addEventListener('hidden.bs.modal', function() {
-            console.log("Modal closed. Stopping background timer.");
             clearInterval(timerInterval);
+            console.log("Modal closed, interval cleared.");
         });
 
-        let timerInterval;
-        let timeLeft = 0;
-        let isPaused = false;
-
-        // Run timer
-        function openUpdateModal(loadId, bagLabel, currentStatus) {
-            document.getElementById('modalLoadId').value = loadId;
-            document.getElementById('modalBagLabel').innerText = bagLabel;
-            document.getElementById('modalStatusSelect').value = currentStatus;
-
-            fetchLogs(loadId);
-            initTimer(loadId);
-            statusModal.show();
-        }
-
-        // TOGGLE PAUSE
-        function togglePause() {
-            const loadId = document.getElementById('modalLoadId').value;
-            const action = isPaused ? 'resume' : 'pause';
-
-            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
-                .then(res => res.json())
-                .then(data => {
-                    isPaused = !isPaused;
-                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
-                    timeLeft = data.remaining;
-
-                    if (!isPaused) {
-                        startCountdown(); // Restart the interval if resuming
-                    } else {
-                        clearInterval(timerInterval); // Stop interval locally if pausing
-                    }
-                });
-        }
-
-        // Get time from database
         function initTimer(loadId) {
-            clearInterval(timerInterval); // Reset timer
-            fetch(`backend/timer_action.php?action=get&load_id=${loadId}`) // Remaining time from db
+            clearInterval(timerInterval);
+            fetch(`backend/timer_action.php?action=get&load_id=${loadId}`)
                 .then(res => res.json())
                 .then(data => {
-                    timeLeft = data.remaining;
-                    isPaused = data.is_paused;
-                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
+                    // IMPORTANT: Ensure these are numbers
+                    timeLeft = parseInt(data.remaining);
+                    isPaused = (data.is_paused === true || data.is_paused === "true");
+
+                    // UI Stuff
+                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Start" : "Pause";
                     updateTimerDisplay();
+
                     if (!isPaused && timeLeft > 0) {
                         startCountdown();
                     }
@@ -340,29 +312,85 @@ $result = $conn->query($query);
         // Start timer 
         function startCountdown() {
             const loadId = document.getElementById('modalLoadId').value;
-            updateTimerDisplay();
-
-            // Clear any existing interval to prevent "double speed" timers
-            clearInterval(timerInterval);
+            clearInterval(timerInterval); // Clear existing interval
 
             timerInterval = setInterval(() => {
-                if (isPaused) return;
+                if (isPaused) {
+                    clearInterval(timerInterval);
+                    return;
+                }
 
                 if (timeLeft > 0) {
                     timeLeft--;
                     updateTimerDisplay();
-                }
-
-                // Check for zero OUTSIDE the timeLeft > 0 block
-                if (timeLeft <= 0) {
+                } else {
                     clearInterval(timerInterval);
-                    console.log("Timer hit zero. Triggering autoCycleStatus for ID:", loadId);
+                    console.log("Time is up! Cycling status...");
                     autoCycleStatus(loadId);
                 }
             }, 1000);
         }
 
-        // Update database
+        // Toggle pause
+        function togglePause() {
+            const loadId = document.getElementById('modalLoadId').value;
+            const action = isPaused ? 'resume' : 'pause';
+
+            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
+                .then(res => res.json())
+                .then(data => {
+                    isPaused = data.is_paused;
+                    timeLeft = parseInt(data.remaining);
+                    document.getElementById('modalPauseBtn').innerText = isPaused ? "Start" : "Pause";
+
+                    if (!isPaused && timeLeft > 0) {
+                        startCountdown();
+                    } else {
+                        clearInterval(timerInterval);
+                    }
+                    updateTimerDisplay();
+                });
+        }
+
+        // UI Display
+        function updateTimerDisplay() {
+            const el = document.getElementById('modalTimerDisplay');
+            if (!el) return;
+
+            if (timeLeft <= 0) {
+                el.innerText = "--:--";
+                return;
+            }
+
+            let mins = Math.floor(timeLeft / 60);
+            let secs = timeLeft % 60;
+            el.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update Timer
+        function updateTimerDB(action) {
+            const loadId = document.getElementById('modalLoadId').value;
+            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
+                .then(res => res.json())
+                .then(data => {
+                    timeLeft = parseInt(data.remaining);
+                    isPaused = data.is_paused;
+
+                    clearInterval(timerInterval);
+                    updateTimerDisplay();
+
+                    // Finish Button
+                    if (action === 'finish' || timeLeft <= 0) {
+                        autoCycleStatus(loadId);
+                    } else {
+                        document.getElementById('modalPauseBtn').innerText = isPaused ? "Start" : "Pause";
+                        if (!isPaused) startCountdown();
+                    }
+                })
+                .catch(err => console.error("Timer Action Error:", err));
+        }
+
+        // Auto_cycle
         function autoCycleStatus(loadId) {
             const formData = new URLSearchParams();
             formData.append('load_id', loadId);
@@ -393,37 +421,6 @@ $result = $conn->query($query);
                 })
                 .catch(err => {
                     console.error("Network/Server Error:", err);
-                });
-        }
-
-        // Display
-        function updateTimerDisplay() {
-            const el = document.getElementById('modalTimerDisplay');
-            if (timeLeft <= 0) {
-                el.innerText = "00:00";
-                return;
-            }
-            // FIX: Changed 20 to 60 for standard minutes/seconds
-            let mins = Math.floor(timeLeft / 60);
-            let secs = timeLeft % 60;
-            el.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-
-        // Pause
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('modalPauseBtn').innerText = isPaused ? "Unpause" : "Pause";
-        }
-
-        // Timer button functions
-        function updateTimerDB(action) {
-            const loadId = document.getElementById('modalLoadId').value;
-            fetch(`backend/timer_action.php?action=${action}&load_id=${loadId}`)
-                .then(res => res.json())
-                .then(data => {
-                    timeLeft = data.remaining;
-                    if (action === 'reset') isPaused = false;
-                    updateTimerDisplay();
                 });
         }
     </script>

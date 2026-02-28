@@ -4,31 +4,66 @@ header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? '';
 $load_id = intval($_GET['load_id'] ?? 0);
-$remaining = 0;
+
+$durations = [
+    'Pending Dropoff'  => 0,
+    'In Queue'         => 0,
+    'Washing'          => 10,
+    'Wash Complete'    => 0,
+    'Drying'           => 20,
+    'Drying Complete'  => 0,
+    'Folding'          => 5,
+    'Folding Complete' => 0,
+    'Awaiting Pickup'  => 0,
+    'Completed'        => 0
+];
 
 if ($action == 'reset') {
-    // Reset: Clear pause state and set new 60s timer
-    $conn->query("UPDATE Process_Load SET end_time = DATE_ADD(NOW(), INTERVAL 60 SECOND), timer_paused_seconds = NULL WHERE load_id = $load_id");
+    // Get current status
+    $res = $conn->query("SELECT status FROM process_load WHERE load_id = $load_id");
+    $row = $res->fetch_assoc();
+    $current_status = $row['status'] ?? 'In Queue';
+
+    // Get duration from array
+    $new_seconds = isset($durations[$current_status]) ? $durations[$current_status] : 60;
+
+    // Update database
+    $conn->query("UPDATE process_load SET timer_paused = $new_seconds, end_time = NULL WHERE load_id = $load_id");
 } elseif ($action == 'pause') {
-    // Pause: Calculate current remaining time and save it into the new column
     $res = $conn->query("SELECT TIMESTAMPDIFF(SECOND, NOW(), end_time) as rem FROM Process_Load WHERE load_id = $load_id");
     $row = $res->fetch_assoc();
     $rem = max(0, intval($row['rem']));
-    $conn->query("UPDATE Process_Load SET timer_paused_seconds = $rem, end_time = NULL WHERE load_id = $load_id");
+    $conn->query("UPDATE Process_Load SET timer_paused = $rem, end_time = NULL WHERE load_id = $load_id");
 } elseif ($action == 'resume') {
-    // Resume: Take the paused seconds and create a new end_time starting from NOW
-    $res = $conn->query("SELECT timer_paused_seconds FROM Process_Load WHERE load_id = $load_id");
+    $res = $conn->query("SELECT timer_paused FROM Process_Load WHERE load_id = $load_id");
     $row = $res->fetch_assoc();
-    $paused_sec = intval($row['timer_paused_seconds']);
-    $conn->query("UPDATE Process_Load SET end_time = DATE_ADD(NOW(), INTERVAL $paused_sec SECOND), timer_paused_seconds = NULL WHERE load_id = $load_id");
+    // $paused_sec = intval($row['timer_paused']);
+    $paused_sec = intval($row['timer_paused'] ?? 60);
+    $conn->query("UPDATE Process_Load SET end_time = DATE_ADD(NOW(), INTERVAL $paused_sec SECOND), timer_paused = NULL WHERE load_id = $load_id");
 }
 
-// GET LOGIC: If timer_paused_seconds has a value, return that. Otherwise, calculate diff.
-$query = "SELECT timer_paused_seconds, TIMESTAMPDIFF(SECOND, NOW(), end_time) AS live_rem 
+// FETCH CURRENT STATE
+$query = "SELECT timer_paused, end_time, TIMESTAMPDIFF(SECOND, NOW(), end_time) AS live_rem 
           FROM Process_Load WHERE load_id = $load_id";
 $res = $conn->query($query);
-if ($row = $res->fetch_assoc()) {
-    $remaining = ($row['timer_paused_seconds'] !== null) ? $row['timer_paused_seconds'] : $row['live_rem'];
+$row = $res->fetch_assoc();
+
+$remaining = 0;
+$is_paused = true;
+
+if ($row) {
+    // If the record is brand new (both columns NULL), initialize it to 120
+    if ($row['timer_paused'] === null && $row['end_time'] === null) {
+        $conn->query("UPDATE Process_Load SET timer_paused = 64 WHERE load_id = $load_id");
+        $remaining = 64;
+        $is_paused = true;
+    } else {
+        $is_paused = ($row['timer_paused'] !== null);
+        $remaining = $is_paused ? intval($row['timer_paused']) : intval($row['live_rem']);
+    }
 }
 
-echo json_encode(['remaining' => max(0, intval($remaining)), 'is_paused' => ($row['timer_paused_seconds'] !== null)]);
+echo json_encode([
+    'remaining' => max(0, $remaining),
+    'is_paused' => $is_paused
+]);
