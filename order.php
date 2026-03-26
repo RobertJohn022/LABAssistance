@@ -110,6 +110,11 @@
                         <textarea class="form-control" name="note" rows="3" placeholder="e.g. Separate delicate items..."></textarea>
                     </div>
 
+                    <div class="alert alert-warning mb-4" role="alert" style="background-color: #fff7cc; border-color: #ffe6a8; color: #6b5600;">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Note:</strong> When weight exceeds the maximum for each load (8kg), the excess laundry will be counted towards a new load and final payment will be adjusted accordingly.
+                    </div>
+
                     <div class="fixed-bottom bg-white border-top shadow-lg p-3">
                         <div class="container" style="max-width: 600px;">
                             <div class="d-flex justify-content-between align-items-center mb-2">
