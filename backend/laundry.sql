@@ -97,3 +97,19 @@ CREATE TABLE `process_load` (
   KEY `order_id` (`order_id`),
   CONSTRAINT `process_load_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `order` (`order_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- 5. Table structure for table `service_prices`
+-- --------------------------------------------------------
+CREATE TABLE `service_prices` (
+  `service_name` varchar(50) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`service_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `service_prices` (`service_name`, `price`) VALUES
+('Wash', 55.00),
+('Dry', 60.00),
+('Fold', 30.00),
+('Detergent', 20.00),
+('Softener', 10.00);

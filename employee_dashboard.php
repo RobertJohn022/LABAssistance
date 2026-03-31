@@ -275,7 +275,7 @@ $orderGroups = [
                                                                     <?php endif; ?>
                                                                 </div>
 
-                                                                <form id="price-form-<?php echo $order_id; ?>" action="backend/update_price.php" method="POST" class="d-none align-items-center" style="max-width: 200px;">
+                                                                <form id="price-form-<?php echo $order_id; ?>" action="backend/update_final_price.php" method="POST" class="d-none align-items-center" style="max-width: 200px;">
                                                                     <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order_id); ?>">
                                                                     <div class="input-group input-group-sm">
                                                                         <span class="input-group-text fw-bold">₱</span>
@@ -286,206 +286,206 @@ $orderGroups = [
                                                                 </form>
                                                             </div>
                                                         </div>
+
+                                                        <button class="btn btn-sm btn-light w-100 mt-3 border shadow-sm fw-bold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#orderCollapse<?php echo $order_id; ?>">
+                                                            <i class="bi bi-chevron-expand"></i> Manage Bags
+                                                        </button>
                                                     </div>
 
-                                                    <div class="order-body p-2 bg-white">
-                                                        <?php if (empty($order['loads'])): ?>
-                                                            <div class="text-muted small text-center py-2">No bags registered for this order yet.</div>
-                                                        <?php else: ?>
-                                                            <?php foreach ($order['loads'] as $load): ?>
-                                                                <div class="bag-item border rounded p-3 mb-2 shadow-sm">
-                                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                        <div class="fw-bold text-primary">
-                                                                            <i class="bi bi-bag-fill me-1"></i>
-                                                                            <?php echo htmlspecialchars($load['bag_label']); ?>
-                                                                        </div>
-
-                                                                        <div class="d-flex align-items-center">
-                                                                            <?php
-                                                                            $s = $load['status'];
-                                                                            $badgeClass = 'bg-secondary';
-                                                                            if ($s == 'In Queue') $badgeClass = 'bg-dark';
-                                                                            elseif (strpos($s, 'Washing') !== false) $badgeClass = 'bg-primary';
-                                                                            elseif (strpos($s, 'Drying') !== false) $badgeClass = 'bg-warning text-dark';
-                                                                            elseif ($s == 'Awaiting Pickup') $badgeClass = 'bg-success';
-                                                                            elseif ($s == 'Completed') $badgeClass = 'bg-success bg-opacity-75';
-                                                                            elseif ($s == 'Cancelled') $badgeClass = 'bg-danger';
-                                                                            ?>
-                                                                            <span class="badge rounded-pill <?php echo $badgeClass; ?> me-2"><?php echo $s; ?></span>
-
-                                                                            <?php if ($order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
-                                                                                <form action="backend/manage_bag.php" method="POST" class="m-0 p-0" data-total-bags="<?php echo $totalBags; ?>">
-                                                                                    <input type="hidden" name="action" value="delete_bag">
-                                                                                    <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                    <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                                                                                    <button type="button" class="delete-bag-btn" title="Delete Bag" onclick="handleDeleteBag(this.closest('form'))"><i class="bi bi-trash-fill"></i></button>
-                                                                                </form>
-                                                                            <?php endif; ?>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <?php
-                                                                    $hasTimer = !empty($load['timer_end']);
-                                                                    $isPaused = ($load['timer_remaining'] !== null);
-
-                                                                    if ($hasTimer || $isPaused):
-                                                                        $duration = intval($load['timer_duration'] ?? 1);
-                                                                    ?>
-                                                                        <div class="border rounded p-2 mb-3 bg-white shadow-sm border-warning">
-                                                                            <div class="d-flex justify-content-between align-items-center mb-1 small">
-                                                                                <span class="fw-bold text-dark"><i class="bi bi-stopwatch me-1"></i> <?php echo strtoupper($s); ?> TIMER</span>
-                                                                                <?php if ($isPaused): ?>
-                                                                                    <span class="badge bg-warning text-dark px-2"><i class="bi bi-pause-fill"></i> PAUSED</span>
-                                                                                <?php else: ?>
-                                                                                    <span class="live-timer text-danger fw-bold" data-end="<?php echo date('c', strtotime($load['timer_end'])); ?>" data-duration="<?php echo $duration; ?>">--:--</span>
-                                                                                <?php endif; ?>
+                                                    <div class="collapse" id="orderCollapse<?php echo $order_id; ?>">
+                                                        <div class="order-body p-2 bg-white">
+                                                            <?php if (empty($order['loads'])): ?>
+                                                                <div class="text-muted small text-center py-2">No bags registered for this order yet.</div>
+                                                            <?php else: ?>
+                                                                <?php foreach ($order['loads'] as $load): ?>
+                                                                    <div class="bag-item border rounded p-3 mb-2 shadow-sm">
+                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                            <div class="fw-bold text-primary">
+                                                                                <i class="bi bi-bag-fill me-1"></i>
+                                                                                <?php echo htmlspecialchars($load['bag_label']); ?>
                                                                             </div>
 
-                                                                            <div class="progress" style="height: 6px; background-color: #e9ecef;">
-                                                                                <?php if ($isPaused):
-                                                                                    $rem = intval($load['timer_remaining']);
-                                                                                    $progressPct = max(0, min(100, (1 - ($rem / $duration)) * 100));
-                                                                                ?>
-                                                                                    <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: <?php echo $progressPct; ?>%;"></div>
-                                                                                <?php else: ?>
-                                                                                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated live-progress" role="progressbar" style="width: 0%;" data-end="<?php echo date('c', strtotime($load['timer_end'])); ?>" data-duration="<?php echo $duration; ?>"></div>
-                                                                                <?php endif; ?>
-                                                                            </div>
-                                                                        </div>
-                                                                    <?php endif; ?>
-
-                                                                    <?php if ($isOpen && $s !== 'Completed' && $s !== 'Pending Dropoff' && $s !== 'Awaiting Pickup' && $order['order_status'] !== 'Cancelled'): ?>
-                                                                        <button class="btn btn-sm btn-outline-secondary w-100 py-1" type="button" data-bs-toggle="collapse" data-bs-target="#bag-controls-<?php echo $load['load_id']; ?>">
-                                                                            <i class="bi bi-gear"></i> Manage Bag
-                                                                        </button>
-
-                                                                        <div class="collapse mt-2" id="bag-controls-<?php echo $load['load_id']; ?>">
-                                                                            <div class="bg-light p-2 rounded border">
+                                                                            <div class="d-flex align-items-center">
                                                                                 <?php
-                                                                                $hasW = (stripos($order['services_requested'], 'Wash') !== false);
-                                                                                $hasD = (stripos($order['services_requested'], 'Dry') !== false);
-                                                                                $hasF = (stripos($order['services_requested'], 'Fold') !== false);
-                                                                                $needsMachine = ($hasW || $hasD);
-
-                                                                                $nextPhase = 'Awaiting Pickup';
-                                                                                if ($s === 'In Queue') {
-                                                                                    $nextPhase = $hasW ? 'Washing' : ($hasD ? 'Drying' : 'Folding');
-                                                                                } elseif ($s === 'Washing') {
-                                                                                    $nextPhase = $hasD ? 'Drying' : ($hasF ? 'Folding' : 'Awaiting Pickup');
-                                                                                } elseif ($s === 'Drying') {
-                                                                                    $nextPhase = $hasF ? 'Folding' : 'Awaiting Pickup';
-                                                                                } elseif ($s === 'Folding') {
-                                                                                    $nextPhase = 'Awaiting Pickup';
-                                                                                }
-
-                                                                                // DESCRIPTIVE TIMER TEXT LOGIC
-                                                                                $timerLabel = 'Set New Timer:';
-                                                                                if ($s === 'In Queue') {
-                                                                                    if ($hasW) $timerLabel = 'Set Washing Machine Timer:';
-                                                                                    elseif ($hasD) $timerLabel = 'Set Dryer Timer:';
-                                                                                } elseif ($s === 'Washing') {
-                                                                                    $timerLabel = 'Set Addt\'l Wash Time:';
-                                                                                } elseif ($s === 'Drying') {
-                                                                                    $timerLabel = 'Set Addt\'l Dry Time:';
-                                                                                }
+                                                                                $s = $load['status'];
+                                                                                $badgeClass = 'bg-secondary';
+                                                                                if ($s == 'In Queue') $badgeClass = 'bg-dark';
+                                                                                elseif (strpos($s, 'Washing') !== false) $badgeClass = 'bg-primary';
+                                                                                elseif (strpos($s, 'Drying') !== false) $badgeClass = 'bg-warning text-dark';
+                                                                                elseif ($s == 'Awaiting Pickup') $badgeClass = 'bg-success';
+                                                                                elseif ($s == 'Completed') $badgeClass = 'bg-success bg-opacity-75';
+                                                                                elseif ($s == 'Cancelled') $badgeClass = 'bg-danger';
                                                                                 ?>
+                                                                                <span class="badge rounded-pill <?php echo $badgeClass; ?> me-2"><?php echo $s; ?></span>
 
-                                                                                <?php if (($s === 'In Queue' && $needsMachine) || $s === 'Washing' || $s === 'Drying'): ?>
-                                                                                    <?php if ($hasTimer): ?>
-                                                                                        <div class="d-flex gap-2 mb-2">
-                                                                                            <form action="backend/update_status.php" method="POST" class="flex-grow-1">
-                                                                                                <input type="hidden" name="action" value="pause_timer">
-                                                                                                <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                                <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold"><i class="bi bi-pause-fill"></i> Pause</button>
-                                                                                            </form>
-                                                                                            <form action="backend/update_status.php" method="POST" class="flex-grow-1">
-                                                                                                <input type="hidden" name="action" value="reset_timer">
-                                                                                                <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                                <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-                                                                                            </form>
-                                                                                        </div>
-                                                                                    <?php elseif ($isPaused): ?>
-                                                                                        <div class="d-flex gap-2 mb-2">
-                                                                                            <form action="backend/update_status.php" method="POST" class="flex-grow-1">
-                                                                                                <input type="hidden" name="action" value="resume_timer">
-                                                                                                <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="bi bi-play-fill"></i> Resume</button>
-                                                                                            </form>
-                                                                                            <form action="backend/update_status.php" method="POST" class="flex-grow-1">
-                                                                                                <input type="hidden" name="action" value="reset_timer">
-                                                                                                <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                                <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-                                                                                            </form>
-                                                                                        </div>
-                                                                                    <?php else: ?>
-                                                                                        <form action="backend/update_status.php" method="POST" class="mb-2">
-                                                                                            <input type="hidden" name="action" value="start_timer">
-                                                                                            <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                            <label class="small fw-bold text-muted mb-1">
-                                                                                                <?php echo $timerLabel; ?>
-                                                                                            </label>
-                                                                                            <div class="input-group input-group-sm" style="max-width: 180px;">
-                                                                                                <input type="number" name="minutes" class="form-control text-center fw-bold" placeholder="Mins" required min="1">
-                                                                                                <button type="submit" class="btn btn-primary fw-bold px-3">Start</button>
-                                                                                            </div>
-                                                                                        </form>
-                                                                                    <?php endif; ?>
-                                                                                <?php endif; ?>
-
-                                                                                <?php
-                                                                                $showNextPhase = true;
-                                                                                if ($s === 'In Queue' && $needsMachine) $showNextPhase = false;
-                                                                                if (($s === 'Washing' || $s === 'Drying') && !$hasTimer && !$isPaused) $showNextPhase = false;
-
-                                                                                if ($showNextPhase):
-                                                                                ?>
-                                                                                    <form action="backend/update_status.php" method="POST" onsubmit="submitNextPhase(event, this)">
-                                                                                        <input type="hidden" name="is_ajax" value="1">
-                                                                                        <input type="hidden" name="action" value="next_phase">
+                                                                                <?php if ($order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
+                                                                                    <form action="backend/manage_bag.php" method="POST" class="m-0 p-0" data-total-bags="<?php echo $totalBags; ?>">
+                                                                                        <input type="hidden" name="action" value="delete_bag">
                                                                                         <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
-                                                                                        <button type="submit" class="btn btn-success btn-sm w-100 fw-bold mt-2">
-                                                                                            Move to <?php echo $nextPhase; ?> <i class="bi bi-arrow-right-short"></i>
-                                                                                        </button>
+                                                                                        <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                                                                        <button type="button" class="delete-bag-btn" title="Delete Bag" onclick="handleDeleteBag(this.closest('form'))"><i class="bi bi-trash-fill"></i></button>
                                                                                     </form>
                                                                                 <?php endif; ?>
                                                                             </div>
                                                                         </div>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        <?php endif; ?>
+
+                                                                        <?php
+                                                                        $hasTimer = !empty($load['timer_end']);
+                                                                        $isPaused = ($load['timer_remaining'] !== null);
+
+                                                                        if ($hasTimer || $isPaused):
+                                                                            $duration = intval($load['timer_duration'] ?? 1);
+                                                                        ?>
+                                                                            <div class="border rounded p-2 mb-3 bg-white shadow-sm border-warning">
+                                                                                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                                                                                    <span class="fw-bold text-dark"><i class="bi bi-stopwatch me-1"></i> <?php echo strtoupper($s); ?> TIMER</span>
+                                                                                    <?php if ($isPaused): ?>
+                                                                                        <span class="badge bg-warning text-dark px-2"><i class="bi bi-pause-fill"></i> PAUSED</span>
+                                                                                    <?php else: ?>
+                                                                                        <span class="live-timer text-danger fw-bold" data-end="<?php echo date('c', strtotime($load['timer_end'])); ?>" data-duration="<?php echo $duration; ?>">--:--</span>
+                                                                                    <?php endif; ?>
+                                                                                </div>
+
+                                                                                <div class="progress" style="height: 6px; background-color: #e9ecef;">
+                                                                                    <?php if ($isPaused):
+                                                                                        $rem = intval($load['timer_remaining']);
+                                                                                        $progressPct = max(0, min(100, (1 - ($rem / $duration)) * 100));
+                                                                                    ?>
+                                                                                        <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: <?php echo $progressPct; ?>%;"></div>
+                                                                                    <?php else: ?>
+                                                                                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated live-progress" role="progressbar" style="width: 0%;" data-end="<?php echo date('c', strtotime($load['timer_end'])); ?>" data-duration="<?php echo $duration; ?>"></div>
+                                                                                    <?php endif; ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        <?php endif; ?>
+
+                                                                        <?php if ($isOpen && $s !== 'Completed' && $s !== 'Pending Dropoff' && $s !== 'Awaiting Pickup' && $order['order_status'] !== 'Cancelled'): ?>
+
+                                                                            <div class="mt-2">
+                                                                                <div class="bg-light p-2 rounded border">
+                                                                                    <?php
+                                                                                    $hasW = (stripos($order['services_requested'], 'Wash') !== false);
+                                                                                    $hasD = (stripos($order['services_requested'], 'Dry') !== false);
+                                                                                    $hasF = (stripos($order['services_requested'], 'Fold') !== false);
+                                                                                    $needsMachine = ($hasW || $hasD);
+
+                                                                                    $nextPhase = 'Awaiting Pickup';
+                                                                                    if ($s === 'In Queue') {
+                                                                                        $nextPhase = $hasW ? 'Washing' : ($hasD ? 'Drying' : 'Folding');
+                                                                                    } elseif ($s === 'Washing') {
+                                                                                        $nextPhase = $hasD ? 'Drying' : ($hasF ? 'Folding' : 'Awaiting Pickup');
+                                                                                    } elseif ($s === 'Drying') {
+                                                                                        $nextPhase = $hasF ? 'Folding' : 'Awaiting Pickup';
+                                                                                    } elseif ($s === 'Folding') {
+                                                                                        $nextPhase = 'Awaiting Pickup';
+                                                                                    }
+
+                                                                                    // DESCRIPTIVE TIMER TEXT LOGIC
+                                                                                    $timerLabel = 'Set New Timer:';
+                                                                                    if ($s === 'In Queue') {
+                                                                                        if ($hasW) $timerLabel = 'Set Washing Machine Timer:';
+                                                                                        elseif ($hasD) $timerLabel = 'Set Dryer Timer:';
+                                                                                    } elseif ($s === 'Washing') {
+                                                                                        $timerLabel = 'Set Addt\'l Wash Time:';
+                                                                                    } elseif ($s === 'Drying') {
+                                                                                        $timerLabel = 'Set Addt\'l Dry Time:';
+                                                                                    }
+                                                                                    ?>
+
+                                                                                    <?php if (($s === 'In Queue' && $needsMachine) || $s === 'Washing' || $s === 'Drying'): ?>
+                                                                                        <?php if ($hasTimer): ?>
+                                                                                            <div class="d-flex gap-2 mb-2">
+                                                                                                <form action="backend/update_status.php" method="POST" class="flex-grow-1">
+                                                                                                    <input type="hidden" name="action" value="pause_timer">
+                                                                                                    <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                                    <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold"><i class="bi bi-pause-fill"></i> Pause</button>
+                                                                                                </form>
+                                                                                                <form action="backend/update_status.php" method="POST" class="flex-grow-1">
+                                                                                                    <input type="hidden" name="action" value="reset_timer">
+                                                                                                    <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                                                                                                </form>
+                                                                                            </div>
+                                                                                        <?php elseif ($isPaused): ?>
+                                                                                            <div class="d-flex gap-2 mb-2">
+                                                                                                <form action="backend/update_status.php" method="POST" class="flex-grow-1">
+                                                                                                    <input type="hidden" name="action" value="resume_timer">
+                                                                                                    <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                                    <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="bi bi-play-fill"></i> Resume</button>
+                                                                                                </form>
+                                                                                                <form action="backend/update_status.php" method="POST" class="flex-grow-1">
+                                                                                                    <input type="hidden" name="action" value="reset_timer">
+                                                                                                    <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                                                                                                </form>
+                                                                                            </div>
+                                                                                        <?php else: ?>
+                                                                                            <form action="backend/update_status.php" method="POST" class="mb-2">
+                                                                                                <input type="hidden" name="action" value="start_timer">
+                                                                                                <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                                <label class="small fw-bold text-muted mb-1">
+                                                                                                    <?php echo $timerLabel; ?>
+                                                                                                </label>
+                                                                                                <div class="input-group input-group-sm" style="max-width: 180px;">
+                                                                                                    <input type="number" name="minutes" class="form-control text-center fw-bold" placeholder="Mins" required min="1">
+                                                                                                    <button type="submit" class="btn btn-primary fw-bold px-3">Start</button>
+                                                                                                </div>
+                                                                                            </form>
+                                                                                        <?php endif; ?>
+                                                                                    <?php endif; ?>
+
+                                                                                    <?php
+                                                                                    $showNextPhase = true;
+                                                                                    if ($s === 'In Queue' && $needsMachine) $showNextPhase = false;
+                                                                                    if (($s === 'Washing' || $s === 'Drying') && !$hasTimer && !$isPaused) $showNextPhase = false;
+
+                                                                                    if ($showNextPhase):
+                                                                                    ?>
+                                                                                        <form action="backend/update_status.php" method="POST" onsubmit="submitNextPhase(event, this)">
+                                                                                            <input type="hidden" name="is_ajax" value="1">
+                                                                                            <input type="hidden" name="action" value="next_phase">
+                                                                                            <input type="hidden" name="load_id" value="<?php echo $load['load_id']; ?>">
+                                                                                            <button type="submit" class="btn btn-success btn-sm w-100 fw-bold mt-2">
+                                                                                                Move to <?php echo $nextPhase; ?> <i class="bi bi-arrow-right-short"></i>
+                                                                                            </button>
+                                                                                        </form>
+                                                                                    <?php endif; ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            <?php endif; ?>
+                                                        </div>
+
+                                                        <div class="p-3 bg-white border-top d-flex flex-column gap-2">
+                                                            <?php if ($pendingCount > 0 && $isOpen): ?>
+                                                                <form action="backend/update_status.php" method="POST" class="m-0">
+                                                                    <input type="hidden" name="action" value="receive_order">
+                                                                    <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                                                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                                                                        <i class="bi bi-box-seam me-1"></i> Mark Order as Received
+                                                                    </button>
+                                                                </form>
+                                                            <?php endif; ?>
+
+                                                            <?php if ($awaitingCount === $totalBags && $totalBags > 0 && $isOpen && $order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
+                                                                <form action="backend/update_status.php" method="POST" class="m-0" onsubmit="submitCompleteOrder(event, this)">
+                                                                    <input type="hidden" name="is_ajax" value="1">
+                                                                    <input type="hidden" name="action" value="complete_order">
+                                                                    <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                                                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
+                                                                        <i class="bi bi-check2-circle me-1"></i> Complete Order
+                                                                    </button>
+                                                                </form>
+                                                            <?php endif; ?>
+
+                                                            <button class="btn btn-sm btn-link text-decoration-none w-100 mt-1" onclick="viewLogs('<?php echo $order_id; ?>')">
+                                                                <i class="bi bi-journal-text"></i> View Order History Logs
+                                                            </button>
+                                                        </div>
                                                     </div>
-
-                                                    <div class="p-3 bg-white border-top d-flex flex-column gap-2">
-                                                        <?php if ($pendingCount > 0 && $isOpen): ?>
-                                                            <form action="backend/update_status.php" method="POST" class="m-0">
-                                                                <input type="hidden" name="action" value="receive_order">
-                                                                <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                                                                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
-                                                                    <i class="bi bi-box-seam me-1"></i> Mark Order as Received
-                                                                </button>
-                                                            </form>
-                                                        <?php endif; ?>
-
-                                                        <?php if ($awaitingCount === $totalBags && $totalBags > 0 && $isOpen && $order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
-                                                            <form action="backend/update_status.php" method="POST" class="m-0" onsubmit="submitCompleteOrder(event, this)">
-                                                                <input type="hidden" name="is_ajax" value="1">
-                                                                <input type="hidden" name="action" value="complete_order">
-                                                                <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                                                                <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
-                                                                    <i class="bi bi-check2-circle me-1"></i> Complete Order
-                                                                </button>
-                                                            </form>
-                                                        <?php endif; ?>
-
-                                                        <button class="btn btn-sm btn-link text-decoration-none w-100 mt-1" onclick="viewLogs('<?php echo $order_id; ?>')">
-                                                            <i class="bi bi-journal-text"></i> View Order History Logs
-                                                        </button>
-                                                    </div>
-
-                                                </div>
-
-                                            <?php endforeach; ?>
+                                                </div> <?php endforeach; ?>
                                         <?php else: ?>
                                             <div class="text-muted small text-center bg-transparent py-2">
                                                 No <?php echo strtolower($group['title']); ?> found.

@@ -7,10 +7,28 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Manager') {
     exit();
 }
 
-// Fetch Status
+// Fetch Shop Status
 $statusResult = $conn->query("SELECT is_shop_open FROM Shop_Status WHERE status_id = 1");
 $shopData = $statusResult->fetch_assoc();
 $isOpen = ($shopData && $shopData['is_shop_open'] == 1);
+
+// Fetch Service Prices
+$prices = [];
+$priceQuery = $conn->query("SELECT * FROM service_prices");
+if ($priceQuery) {
+    while ($row = $priceQuery->fetch_assoc()) {
+        $prices[$row['service_name']] = $row['price'];
+    }
+}
+// Fallback array in case the database is empty initially
+$prices = array_merge([
+    'Wash' => 55.00,
+    'Dry' => 60.00,
+    'Fold' => 30.00,
+    'Detergent' => 20.00,
+    'Softener' => 10.00
+], $prices);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,7 +71,7 @@ $isOpen = ($shopData && $shopData['is_shop_open'] == 1);
                     <p class="text-muted mb-0 fs-5 mt-1"><?php echo date("F j, Y"); ?></p>
                 </div>
 
-                <div class="d-grid gap-3">
+                <div class="d-grid gap-3 mb-4">
                     <a href="shop_status.php" class="btn btn-dark py-3 fw-bold text-uppercase rounded-3 shadow-sm">
                         <i class="bi bi-power me-2"></i>Open/Close Shop
                     </a>
@@ -64,6 +82,52 @@ $isOpen = ($shopData && $shopData['is_shop_open'] == 1);
                         <i class="bi bi-people-fill me-2"></i>View Employee Table
                     </a>
                 </div>
+
+                <div class="app-card p-4 shadow-sm bg-white rounded-3 border">
+                    <h5 class="fw-bold text-uppercase mb-3 text-dark border-bottom pb-2" style="letter-spacing: 1px;">Service Rates</h5>
+
+                    <?php if (isset($_SESSION['settings_success'])): ?>
+                        <div class="alert alert-success small py-2">
+                            <i class="bi bi-check-circle-fill me-1"></i> <?php echo $_SESSION['settings_success'];
+                                                                            unset($_SESSION['settings_success']); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form action="backend/update_rates.php" method="POST">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-sm-4">
+                                <label class="small fw-bold text-muted mb-1">Wash (₱)</label>
+                                <input type="number" step="0.01" name="price_wash" class="form-control text-center fw-bold" value="<?php echo htmlspecialchars($prices['Wash']); ?>" required>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="small fw-bold text-muted mb-1">Dry (₱)</label>
+                                <input type="number" step="0.01" name="price_dry" class="form-control text-center fw-bold" value="<?php echo htmlspecialchars($prices['Dry']); ?>" required>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="small fw-bold text-muted mb-1">Fold (₱)</label>
+                                <input type="number" step="0.01" name="price_fold" class="form-control text-center fw-bold" value="<?php echo htmlspecialchars($prices['Fold']); ?>" required>
+                            </div>
+                        </div>
+
+                        <h6 class="small fw-bold text-muted mt-3 mb-2 text-uppercase border-top pt-3">Add-ons</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="small fw-bold text-muted mb-1">Detergent (₱)</label>
+                                <input type="number" step="0.01" name="price_detergent" class="form-control text-center fw-bold" value="<?php echo htmlspecialchars($prices['Detergent']); ?>" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="small fw-bold text-muted mb-1">Softener (₱)</label>
+                                <input type="number" step="0.01" name="price_softener" class="form-control text-center fw-bold" value="<?php echo htmlspecialchars($prices['Softener']); ?>" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-uppercase shadow-sm">
+                            <i class="bi bi-save me-1"></i> Update Prices
+                        </button>
+                    </form>
+                </div>
+
+                <div style="height: 50px;"></div>
             </div>
         </div>
     </div>

@@ -137,17 +137,29 @@ endif;
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-light border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark">Add Extra Bag</h5>
+                <h5 class="modal-title fw-bold text-dark">Add Extra Bags</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-4">
                 <form action="backend/manage_bag.php" method="POST">
                     <input type="hidden" name="action" value="add_bag">
                     <input type="hidden" name="order_id" id="add_bag_order_id">
-                    <div class="mb-4">
-                        <label class="form-label text-muted small fw-bold text-uppercase">Bag Label</label>
-                        <input type="text" class="form-control" name="bag_label" placeholder="e.g. Bag 2, Whites, Comforter" required>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase d-block text-center">Bag Category</label>
+                        <select class="form-select text-center fw-bold bg-light border-0 shadow-sm" name="bag_category" id="add_bag_category" required>
+                        </select>
                     </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase d-block text-center">Number of Bags</label>
+                        <div class="d-flex align-items-center gap-3 justify-content-center">
+                            <button type="button" class="btn btn-outline-secondary rounded-circle shadow-sm" onclick="updateBagCount(-1)" style="width: 40px; height: 40px;"><i class="bi bi-dash-lg"></i></button>
+                            <input type="number" class="form-control text-center fw-bold fs-5 border-0 bg-light shadow-sm" name="bag_quantity" id="add_bag_qty" value="1" min="1" max="10" readonly style="width: 70px;">
+                            <button type="button" class="btn btn-outline-secondary rounded-circle shadow-sm" onclick="updateBagCount(1)" style="width: 40px; height: 40px;"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-primary-app w-100 py-2 fw-bold">Add to Queue</button>
                 </form>
             </div>
@@ -157,6 +169,54 @@ endif;
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Create a dictionary of order services to check if an order is Fold Only
+    const orderServices = {};
+    <?php
+    if (!empty($groupedOrders)):
+        foreach ($orderGroups as $group):
+            foreach ($group['orders'] as $order_id => $order):
+                $safeServices = addslashes($order['services_requested']);
+                echo "orderServices['$order_id'] = '$safeServices';\n";
+            endforeach;
+        endforeach;
+    endif;
+    ?>
+
+    function updateBagCount(change) {
+        const input = document.getElementById('add_bag_qty');
+        let current = parseInt(input.value) || 1;
+        let newValue = current + change;
+        if (newValue >= 1 && newValue <= 10) {
+            input.value = newValue;
+        }
+    }
+
+    var addBagModalObj = new bootstrap.Modal(document.getElementById('addBagModal'));
+
+    function openAddBagModal(orderId) {
+        document.getElementById('add_bag_qty').value = 1;
+        document.getElementById('add_bag_order_id').value = orderId;
+
+        const services = orderServices[orderId] || '';
+        const isWash = services.toLowerCase().includes('wash');
+        const isDry = services.toLowerCase().includes('dry');
+        const isFold = services.toLowerCase().includes('fold');
+        const isFoldOnly = isFold && !isWash && !isDry;
+
+        const categorySelect = document.getElementById('add_bag_category');
+        categorySelect.innerHTML = ''; // Clear previous options
+
+        // Populate dropdown based on order requirements
+        if (isFoldOnly) {
+            categorySelect.innerHTML = '<option value="Fold Only">Fold Only</option>';
+        } else {
+            categorySelect.innerHTML = '<option value="Colored">Colored</option><option value="White">White</option>';
+        }
+
+        addBagModalObj.show();
+    }
+
+    // Track Order UI Function
     // Track Order UI Function
     function trackOrder() {
         let input = document.getElementById('searchTracking').value.toLowerCase().trim();
@@ -172,18 +232,28 @@ endif;
         for (let i = 0; i < cards.length; i++) {
             const card = cards[i];
             const tracking = card.getAttribute('data-tracking').toLowerCase();
-            const orderId = card.getAttribute('data-orderid').toLowerCase();
+            const rawOrderId = card.getAttribute('data-orderid');
+            const orderId = rawOrderId.toLowerCase();
             const textContent = card.innerText.toLowerCase();
 
             if (tracking === input || orderId === input || textContent.includes(input)) {
                 found = true;
+
+                // 1. Open the Status Folder (e.g. In Progress)
                 const accordionCollapse = card.closest('.accordion-collapse');
                 if (accordionCollapse && !accordionCollapse.classList.contains('show')) {
                     const bsCollapse = bootstrap.Collapse.getOrCreateInstance(accordionCollapse);
                     bsCollapse.show();
                 }
 
-                const rawOrderId = card.getAttribute('data-orderid');
+                // 2. Open the individual Order Dropdown to show the bags!
+                const orderCollapse = document.getElementById('orderCollapse' + rawOrderId);
+                if (orderCollapse && !orderCollapse.classList.contains('show')) {
+                    const bsOrderCollapse = bootstrap.Collapse.getOrCreateInstance(orderCollapse);
+                    bsOrderCollapse.show();
+                }
+
+                // 3. Open the main modal tracker
                 const modalEl = document.getElementById('modal' + rawOrderId);
                 if (modalEl) {
                     const modalObj = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -441,12 +511,5 @@ endif;
             .then(response => response.text())
             .then(data => container.innerHTML = data)
             .catch(err => container.innerHTML = '<span class="text-danger">Error loading logs.</span>');
-    }
-
-    var addBagModalObj = new bootstrap.Modal(document.getElementById('addBagModal'));
-
-    function openAddBagModal(orderId) {
-        document.getElementById('add_bag_order_id').value = orderId;
-        addBagModalObj.show();
     }
 </script>

@@ -14,19 +14,32 @@ if (isset($_POST['login'])) {
     if ($result->num_rows === 1) {
         $row = $result->fetch_assoc();
 
-        // Role check
         if ($row['role'] !== 'Manager' && $row['role'] !== 'Employee') {
             $_SESSION['employee_login_error'] = "Access Denied. Customers must use the Customer Login.";
             header("Location: ../staff_login.php");
             exit();
         }
 
-        // Password check
         if (password_verify($password, $row['password'])) {
             $_SESSION['user_id'] = $row['user_id'];
             $_SESSION['role'] = $row['role'];
             $_SESSION['first_name'] = $row['first_name'];
             $_SESSION['last_name'] = $row['last_name'];
+
+            // Remember Me Implementation
+            if (isset($_POST['remember'])) {
+                // Set cookies for 30 days
+                setcookie("staff_email", $email, time() + (30 * 24 * 60 * 60), "/");
+                setcookie("staff_password", $password, time() + (30 * 24 * 60 * 60), "/");
+            } else {
+                // Destroy existing cookies if checkbox is unchecked
+                if (isset($_COOKIE['staff_email'])) {
+                    setcookie("staff_email", "", time() - 3600, "/");
+                }
+                if (isset($_COOKIE['staff_password'])) {
+                    setcookie("staff_password", "", time() - 3600, "/");
+                }
+            }
 
             if ($row['role'] === 'Manager') {
                 header("Location: ../manager_dashboard.php");
@@ -37,7 +50,6 @@ if (isset($_POST['login'])) {
         }
     }
 
-    // Generic error for BOTH incorrect password and account not found
     $_SESSION['staff_login_error'] = "Invalid email or password.";
     header("Location: ../staff_login.php");
     exit();

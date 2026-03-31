@@ -11,20 +11,17 @@ if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'Employee' && $_SESSION[
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // Construct the employee name using the new session variables
     $employee_name = (isset($_SESSION['first_name']) && isset($_SESSION['last_name']))
         ? $_SESSION['first_name'] . ' ' . $_SESSION['last_name']
         : 'Staff';
 
-    // ==========================================
-    // ADD BAG LOGIC
-    // ==========================================
+    // Add Bag
     if ($action === 'add_bag') {
         $order_id = $_POST['order_id'] ?? '';
-        $bag_label = trim($_POST['bag_label'] ?? '');
+        $bag_qty = intval($_POST['bag_quantity'] ?? 1);
+        $bag_category = $_POST['bag_category'] ?? 'Colored'; // Captures the dropdown value
 
-        if (!empty($order_id) && !empty($bag_label)) {
-            // Fetch order details for pricing
+        if (!empty($order_id) && $bag_qty > 0) {
             $orderQuery = $conn->query("SELECT services_requested, supplies_requested, final_price FROM `Order` WHERE order_id = '$order_id'");
             if ($orderRow = $orderQuery->fetch_assoc()) {
 
@@ -43,39 +40,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     if (stripos($supplies, 'Fabric Softener') !== false) $costPerLoad += 10;
                 }
 
-                // Update total price
-                $new_price = $current_price + $costPerLoad;
-                $conn->query("UPDATE `Order` SET final_price = $new_price WHERE order_id = '$order_id'");
+                $total_added_cost = $costPerLoad * $bag_qty;
+                $new_price = $current_price + $total_added_cost;
 
-                // Insert new bag
-                $load_category = "Extra Bag";
                 $status = "In Queue";
+                $bags_added_names = [];
+
+                // Get the current highest bag number for THIS SPECIFIC category to name them sequentially
+                $loadCountQuery = $conn->query("SELECT COUNT(*) as c FROM `Process_Load` WHERE order_id = '$order_id' AND load_category = '$bag_category'");
+                $loadCountData = $loadCountQuery->fetch_assoc();
+                $starting_bag_number = $loadCountData['c'] + 1;
+
                 $stmt = $conn->prepare("INSERT INTO `Process_Load` (order_id, load_category, bag_label, status) VALUES (?, ?, ?, ?)");
-                $stmt->bind_param("ssss", $order_id, $load_category, $bag_label, $status);
 
-                if ($stmt->execute()) {
-                    // Update Order Status to in progress if not already
-                    $conn->query("UPDATE `Order` SET status = 'In Progress' WHERE order_id = '$order_id'");
-
-                    // Insert Log
-                    $log_msg = "$employee_name added an extra bag ($bag_label). Price auto-adjusted (+₱$costPerLoad).";
-                    $log_stmt = $conn->prepare("INSERT INTO `Order_Logs` (order_id, log_message) VALUES (?, ?)");
-                    $log_stmt->bind_param("ss", $order_id, $log_msg);
-                    $log_stmt->execute();
+                for ($i = 0; $i < $bag_qty; $i++) {
+                    // Correct Output format: "White #2 (Extra)"
+                    $bag_label = "$bag_category #" . ($starting_bag_number + $i) . " (Extra)";
+                    $bags_added_names[] = $bag_label;
+                    $stmt->bind_param("ssss", $order_id, $bag_category, $bag_label, $status);
+                    $stmt->execute();
                 }
                 $stmt->close();
+
+                // Recalculate formatted bag_counts string dynamically
+                $loadCounts = $conn->query("SELECT load_category, COUNT(*) as count FROM `Process_Load` WHERE order_id = '$order_id' GROUP BY load_category");
+                $c_colored = 0;
+                $c_white = 0;
+                $c_fold = 0;
+                $c_other = 0;
+                while ($lr = $loadCounts->fetch_assoc()) {
+                    if ($lr['load_category'] == 'Colored') $c_colored = $lr['count'];
+                    elseif ($lr['load_category'] == 'White') $c_white = $lr['count'];
+                    elseif ($lr['load_category'] == 'Fold Only') $c_fold = $lr['count'];
+                    else $c_other += $lr['count'];
+                }
+
+                $isFoldOnly = (stripos($services, 'Fold') !== false && stripos($services, 'Wash') === false && stripos($services, 'Dry') === false);
+                $new_bag_counts_str = $isFoldOnly ? "Fold Only: $c_fold" : "Colored: $c_colored, White: $c_white";
+                if ($c_other > 0) $new_bag_counts_str .= ", Extra Types: $c_other";
+
+                // Update Order Status, Price, and Bag Counts String
+                $conn->query("UPDATE `Order` SET final_price = $new_price, bag_counts = '$new_bag_counts_str', status = 'In Progress' WHERE order_id = '$order_id'");
+
+                // Insert Log
+                $bag_names_str = implode(", ", $bags_added_names);
+                $log_msg = "$employee_name added $bag_qty extra bag(s) ($bag_names_str). Price auto-adjusted (+₱$total_added_cost).";
+                $log_stmt = $conn->prepare("INSERT INTO `Order_Logs` (order_id, log_message) VALUES (?, ?)");
+                $log_stmt->bind_param("ss", $order_id, $log_msg);
+                $log_stmt->execute();
             }
         }
     }
-    // ==========================================
-    // DELETE BAG LOGIC
-    // ==========================================
+
+    // Delete Bag
     elseif ($action === 'delete_bag') {
         $load_id = intval($_POST['load_id'] ?? 0);
         $order_id = $_POST['order_id'] ?? '';
 
         if ($load_id > 0 && !empty($order_id)) {
-            // Get bag and order details for pricing
             $stmt = $conn->prepare("SELECT pl.bag_label, o.services_requested, o.supplies_requested, o.final_price FROM `Process_Load` pl JOIN `Order` o ON pl.order_id = o.order_id WHERE pl.load_id = ?");
             $stmt->bind_param("i", $load_id);
             $stmt->execute();
@@ -98,23 +120,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     if (stripos($supplies, 'Fabric Softener') !== false) $costPerLoad += 10;
                 }
 
-                // Update price (prevent going below 0)
                 $new_price = max(0, $current_price - $costPerLoad);
-                $conn->query("UPDATE `Order` SET final_price = $new_price WHERE order_id = '$order_id'");
 
                 // Delete the bag
                 $conn->query("DELETE FROM `Process_Load` WHERE load_id = $load_id");
+
+                // Recalculate formatted bag_counts string dynamically
+                $loadCounts = $conn->query("SELECT load_category, COUNT(*) as count FROM `Process_Load` WHERE order_id = '$order_id' GROUP BY load_category");
+                $c_colored = 0;
+                $c_white = 0;
+                $c_fold = 0;
+                $c_other = 0;
+                while ($lr = $loadCounts->fetch_assoc()) {
+                    if ($lr['load_category'] == 'Colored') $c_colored = $lr['count'];
+                    elseif ($lr['load_category'] == 'White') $c_white = $lr['count'];
+                    elseif ($lr['load_category'] == 'Fold Only') $c_fold = $lr['count'];
+                    else $c_other += $lr['count'];
+                }
+
+                $isFoldOnly = (stripos($services, 'Fold') !== false && stripos($services, 'Wash') === false && stripos($services, 'Dry') === false);
+                $new_bag_counts_str = $isFoldOnly ? "Fold Only: $c_fold" : "Colored: $c_colored, White: $c_white";
+                if ($c_other > 0) $new_bag_counts_str .= ", Extra Types: $c_other";
+
+                // Re-evaluate order status
+                $rem = $conn->query("SELECT COUNT(*) as c FROM `Process_Load` WHERE order_id = '$order_id' AND status != 'Completed'")->fetch_assoc();
+                $masterStatus = ($rem['c'] == 0) ? 'Completed' : 'In Progress';
+
+                // Update Order Database
+                $conn->query("UPDATE `Order` SET final_price = $new_price, bag_counts = '$new_bag_counts_str', status = '$masterStatus' WHERE order_id = '$order_id'");
 
                 // Log the action
                 $log_msg = "$employee_name deleted bag: $bag_label. Price auto-adjusted (-₱$costPerLoad).";
                 $log_stmt = $conn->prepare("INSERT INTO `Order_Logs` (order_id, log_message) VALUES (?, ?)");
                 $log_stmt->bind_param("ss", $order_id, $log_msg);
                 $log_stmt->execute();
-
-                // Re-evaluate if the order is completed after deletion
-                $rem = $conn->query("SELECT COUNT(*) as c FROM `Process_Load` WHERE order_id = '$order_id' AND status != 'Completed'")->fetch_assoc();
-                $masterStatus = ($rem['c'] == 0) ? 'Completed' : 'In Progress';
-                $conn->query("UPDATE `Order` SET status = '$masterStatus' WHERE order_id = '$order_id'");
             }
             $stmt->close();
         }
@@ -122,13 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $order_id = $_POST['order_id'] ?? '';
 
         if (!empty($order_id)) {
-            // Cancel the order
             $conn->query("UPDATE `Order` SET status = 'Cancelled' WHERE order_id = '$order_id'");
-
-            // Cancel remaining loads
             $conn->query("UPDATE `Process_Load` SET status = 'Cancelled' WHERE order_id = '$order_id'");
 
-            // Log the cancellation action
             $log_msg = "$employee_name cancelled the order by removing the final bag.";
             $log_stmt = $conn->prepare("INSERT INTO `Order_Logs` (order_id, log_message) VALUES (?, ?)");
             $log_stmt->bind_param("ss", $order_id, $log_msg);

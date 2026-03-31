@@ -199,9 +199,30 @@ $result = $conn->query("SELECT * FROM `User` WHERE role = 'Employee'");
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function editEmployee(id, name, email) {
+        function editEmployee(id, firstName, lastName, email) {
             document.getElementById('modalTitle').innerText = "Edit Employee";
             document.getElementById('emp_id').value = id;
+            // The arguments are now firstName and lastName to match these variables
+            document.getElementById('emp_first_name').value = firstName;
+            document.getElementById('emp_last_name').value = lastName;
+            document.getElementById('emp_email').value = email;
+
+            // Password logic for editing
+            document.getElementById('emp_password').required = false;
+            document.getElementById('emp_password').placeholder = "Leave blank to keep current";
+            document.getElementById('passHelp').innerText = "Leave blank to keep current password.";
+
+            // Hide error message if it was previously triggered
+            document.getElementById('formError').classList.add('d-none');
+
+            var myModal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            myModal.show();
+        }
+
+        function editEmployee(id, firstName, lastName, email) {
+            document.getElementById('modalTitle').innerText = "Edit Employee";
+            document.getElementById('emp_id').value = id;
+            // The arguments are now firstName and lastName to match these variables
             document.getElementById('emp_first_name').value = firstName;
             document.getElementById('emp_last_name').value = lastName;
             document.getElementById('emp_email').value = email;

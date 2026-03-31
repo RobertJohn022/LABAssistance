@@ -9,6 +9,18 @@ if (!isset($_SESSION['user_id'])) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // Fetch dynamic prices from the database
+    $prices = [];
+    $priceQuery = $conn->query("SELECT * FROM service_prices");
+    if ($priceQuery) {
+        while ($row = $priceQuery->fetch_assoc()) {
+            $prices[$row['service_name']] = $row['price'];
+        }
+    } else {
+        // Fallback or error handling if table doesn't exist yet
+        die("Error loading service prices. Please ensure the service_prices table is set up.");
+    }
+
     // Get form data
     $customer_id = $_SESSION['user_id'];
     $customer_name = trim($_SESSION['first_name'] . ' ' . $_SESSION['last_name']);
@@ -25,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Add-ons
     $supplies = [];
     if (isset($_POST['supplyDetergent'])) $supplies[] = "Detergent";
-    if (isset($_POST['supplySoftener'])) $supplies[] = "Fabric Softener";
+    if (isset($_POST['supplySoftener'])) $supplies[] = "Softener"; // Adjusted to match DB value 'Softener'
     $supplies_str = implode(", ", $supplies);
 
     // Load counts
@@ -46,14 +58,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // Pricing logic
+    // Dynamic Pricing logic
     $costPerLoad = 0;
-    if ($isWash) $costPerLoad += 55;
-    if ($isDry) $costPerLoad += 60;
-    if ($isFold) $costPerLoad += 30;
+    if ($isWash) $costPerLoad += $prices['Wash'];
+    if ($isDry) $costPerLoad += $prices['Dry'];
+    if ($isFold) $costPerLoad += $prices['Fold'];
+
     if ($isWash) {
-        if (in_array("Detergent", $supplies)) $costPerLoad += 20;
-        if (in_array("Fabric Softener", $supplies)) $costPerLoad += 10;
+        if (in_array("Detergent", $supplies)) $costPerLoad += $prices['Detergent'];
+        if (in_array("Softener", $supplies)) $costPerLoad += $prices['Softener'];
     }
 
     $estimated_price = $totalLoads * $costPerLoad;
@@ -62,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Create Order ID
     $datePart = date("mdY");
-    $query = "SELECT COUNT(*) as count FROM `Order` WHERE order_id LIKE '$datePart%'";
+    $query = "SELECT COUNT(*) as count FROM `order` WHERE order_id LIKE '$datePart%'";
     $result = $conn->query($query);
     $row = $result->fetch_assoc();
     $count = $row['count'] + 1;
@@ -81,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Save order
     // Set initial status
-    $stmt = $conn->prepare("INSERT INTO `Order` 
+    $stmt = $conn->prepare("INSERT INTO `order` 
         (order_id, customer_id, customer_name, tracking_code, services_requested, supplies_requested, bag_counts, customer_note, estimated_price, final_price) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
@@ -92,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Save bag details
         // Init bag status
-        $loadInsert = $conn->prepare("INSERT INTO `Process_Load` (order_id, load_category, bag_label) VALUES (?, ?, ?)");
+        $loadInsert = $conn->prepare("INSERT INTO `process_load` (order_id, load_category, bag_label) VALUES (?, ?, ?)");
 
         if ($isFoldOnly) {
             for ($i = 1; $i <= $qtyFold; $i++) {
@@ -117,7 +130,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         $loadInsert->close();
 
-        // Store success info in session to be picked up by SweetAlert
+        // Store success info in session to be picked up by SweetAlert or UI
         $_SESSION['order_success'] = true;
         $_SESSION['new_order_id'] = $order_id;
         $_SESSION['new_tracking'] = $tracking_code;
