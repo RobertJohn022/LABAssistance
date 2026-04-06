@@ -493,32 +493,32 @@ $orderGroups = [
                                                                     <button type="button" class="btn btn-outline-primary w-100 fw-bold py-2 shadow-sm" onclick="openAddBagModal('<?php echo htmlspecialchars($order_id); ?>')">
                                                                         <i class="bi bi-plus-circle me-1"></i> Add Bag
                                                                     </button>
-                                                                <?php endif; ?>
+                                                                </form> <?php endif; ?>
 
-                                                                <?php if ($pendingCount > 0 && $isOpen): ?>
-                                                                    <form action="backend/update_status.php" method="POST" class="m-0">
-                                                                        <input type="hidden" name="action" value="receive_order">
-                                                                        <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                                                                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
-                                                                            <i class="bi bi-box-seam me-1"></i> Mark Order as Received
-                                                                        </button>
-                                                                    </form>
-                                                                <?php endif; ?>
+                                                            <?php if ($pendingCount > 0 && $isOpen): ?>
+                                                                <form action="backend/update_status.php" method="POST" class="m-0">
+                                                                    <input type="hidden" name="action" value="receive_order">
+                                                                    <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                                                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                                                                        <i class="bi bi-box-seam me-1"></i> Mark Order as Received
+                                                                    </button>
+                                                                </form>
+                                                            <?php endif; ?>
 
-                                                                <?php if ($awaitingCount === $totalBags && $totalBags > 0 && $isOpen && $order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
-                                                                    <form action="backend/update_status.php" method="POST" class="m-0" onsubmit="submitCompleteOrder(event, this)">
-                                                                        <input type="hidden" name="is_ajax" value="1">
-                                                                        <input type="hidden" name="action" value="complete_order">
-                                                                        <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
-                                                                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
-                                                                            <i class="bi bi-check2-circle me-1"></i> Complete Order
-                                                                        </button>
-                                                                    </form>
-                                                                <?php endif; ?>
+                                                            <?php if ($awaitingCount === $totalBags && $totalBags > 0 && $isOpen && $order['order_status'] !== 'Completed' && $order['order_status'] !== 'Cancelled'): ?>
+                                                                <form action="backend/update_status.php" method="POST" class="m-0" onsubmit="submitCompleteOrder(event, this)">
+                                                                    <input type="hidden" name="is_ajax" value="1">
+                                                                    <input type="hidden" name="action" value="complete_order">
+                                                                    <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                                                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
+                                                                        <i class="bi bi-check2-circle me-1"></i> Complete Order
+                                                                    </button>
+                                                                </form>
+                                                            <?php endif; ?>
 
-                                                                <button class="btn btn-sm btn-link text-decoration-none w-100 mt-1" onclick="viewLogs('<?php echo $order_id; ?>')">
-                                                                    <i class="bi bi-journal-text"></i> View Order History Logs
-                                                                </button>
+                                                            <button class="btn btn-sm btn-link text-decoration-none w-100 mt-1" onclick="viewLogs('<?php echo $order_id; ?>')">
+                                                                <i class="bi bi-journal-text"></i> View Order History Logs
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div> <?php endforeach; ?>
