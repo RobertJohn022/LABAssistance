@@ -71,7 +71,7 @@
                         <div class="form-check mb-4 mt-2">
                             <input class="form-check-input" type="checkbox" value="" id="agreeTerms" required>
                             <label class="form-check-label text-muted small" for="agreeTerms">
-                                I agree to the <a href="terms_and_conditions.php" class="text-primary fw-bold text-decoration-underline">Terms and Conditions</a>
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" class="text-primary fw-bold text-decoration-underline">Terms and Conditions</a>
                                 <br class="d-md-none">
                                 <span class="text-secondary fst-italic" style="font-size: 0.85em;">(Click to read)</span>
                             </label>
@@ -86,6 +86,50 @@
                     <a href="customer_login.php" class="text-dark fw-bold text-decoration-none">Log In</a>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="termsModalLabel">Terms and Conditions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-muted">
+                    <p><strong>Effective Date:</strong> March 20, 2026</p>
+                    <p>By creating an account on LABAssistance, you agree to these Terms and Conditions. If you do not agree with any part of these terms, please do not use the platform.</p>
+
+                    <h2 class="h5 mt-4">1. Account Registration</h2>
+                    <p>You are responsible for providing accurate and complete information during registration. You are also responsible for maintaining the confidentiality of your account credentials.</p>
+
+                    <h2 class="h5 mt-4">2. Acceptable Use</h2>
+                    <p>You agree to use LABAssistance only for lawful and legitimate purposes. Misuse of the platform, unauthorized access attempts, and activities that disrupt normal operations are strictly prohibited.</p>
+
+                    <h2 class="h5 mt-4">3. Data Privacy Act of 2012 (Republic Act No. 10173)</h2>
+                    <p>LABAssistance collects and processes personal data such as full name and email address for account creation, identity verification, and system communication. Data is handled in compliance with the Philippine Data Privacy Act of 2012.</p>
+
+                    <h2 class="h5 mt-4">4. Data Protection and Security</h2>
+                    <p>Reasonable administrative, technical, and physical security measures are implemented to protect personal information against unauthorized access, disclosure, alteration, or loss.</p>
+
+                    <h2 class="h5 mt-4">5. Non-Disclosure of Personal Data</h2>
+                    <p>LABAssistance does not sell or rent personal information to third parties. Data may only be disclosed when required by law or with your explicit consent.</p>
+
+                    <h2 class="h5 mt-4">6. User Rights</h2>
+                    <p>You have the right to request access, correction, or deletion of your personal data in accordance with applicable privacy laws.</p>
+
+                    <h2 class="h5 mt-4">7. Service Changes</h2>
+                    <p>LABAssistance may update or modify features and policies at any time to improve service quality, security, or legal compliance.</p>
+
+                    <h2 class="h5 mt-4">8. Updates to These Terms</h2>
+                    <p>These terms may be revised from time to time. Continued use of LABAssistance after updates means you accept the revised terms.</p>
+
+                    <p class="mt-4 mb-0">If you have questions about these Terms and Conditions, please contact the LABAssistance support team.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Return to Register</button>
+                </div>
             </div>
         </div>
     </div>
