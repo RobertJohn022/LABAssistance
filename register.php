@@ -22,7 +22,7 @@
                 </div>
 
                 <div class="app-card p-4 shadow-sm rounded bg-white">
-                    <form action="backend/register_process.php" method="POST">
+                    <form action="backend/register_process.php" method="POST" id="registerForm">
                         <div class="row">
                             <div class="col-12 col-md-6 mb-3">
                                 <label class="form-label text-muted small fw-bold text-uppercase">First Name</label>
@@ -203,6 +203,23 @@
 
         pwd.addEventListener('input', validatePassword);
         confPwd.addEventListener('input', validatePassword);
+
+        // Show loading SweetAlert on form submission
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function() {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Please wait while we create your account and send a verification email.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            });
+        }
     </script>
 </body>
 

@@ -113,7 +113,7 @@ while ($row = $priceQuery->fetch_assoc()) {
                     </div>
 
                     <div class="mb-5">
-                        <h6 class="text-muted fw-bold text-uppercase small mb-3 ps-1">Instructions</h6>
+                        <h6 class="text-muted fw-bold text-uppercase small mb-3 ps-1">Custom Instructions (Optional)</h6>
                         <textarea class="form-control" name="note" rows="3" placeholder="e.g. Separate delicate items..."></textarea>
                     </div>
 
