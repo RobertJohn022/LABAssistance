@@ -92,6 +92,9 @@ $prices = array_merge([
                     <a href="employee_dashboard.php" class="btn btn-dark py-3 fw-bold text-uppercase rounded-3 shadow-sm">
                         <i class="bi bi-receipt me-2"></i>View Orders
                     </a>
+                    <a href="orders_history.php" class="btn btn-dark py-3 fw-bold text-uppercase rounded-3 shadow-sm">
+                        <i class="bi bi-receipt me-2"></i>View Orders History
+                    </a>
                     <a href="manager_employee_table.php" class="btn btn-dark py-3 fw-bold text-uppercase rounded-3 shadow-sm">
                         <i class="bi bi-people-fill me-2"></i>View Employee Table
                     </a>
