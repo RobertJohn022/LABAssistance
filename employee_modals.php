@@ -347,6 +347,15 @@ endif;
     function submitNextPhase(event, form) {
         event.preventDefault();
 
+        // NEW: Save the order ID to sessionStorage so it can be reopened after reload
+        const orderCard = form.closest('.order-group-card');
+        if (orderCard) {
+            const orderId = orderCard.getAttribute('data-orderid');
+            if (orderId) {
+                sessionStorage.setItem('reopenOrderId', orderId);
+            }
+        }
+
         // Check what the button text was to customize the popup
         const buttonText = event.submitter ? event.submitter.innerText : '';
         let alertText = 'Moving to the next phase...';
@@ -466,4 +475,36 @@ endif;
             .then(data => container.innerHTML = data)
             .catch(err => container.innerHTML = '<span class="text-danger">Error loading logs.</span>');
     }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if there is an order dropdown that needs to remain open
+        const reopenOrderId = sessionStorage.getItem('reopenOrderId');
+
+        if (reopenOrderId) {
+            const orderCollapse = document.getElementById('orderCollapse' + reopenOrderId);
+
+            if (orderCollapse) {
+                const accordionCollapse = orderCollapse.closest('.accordion-collapse');
+                if (accordionCollapse && !accordionCollapse.classList.contains('show')) {
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(accordionCollapse);
+                    bsCollapse.show();
+                }
+
+                const bsOrderCollapse = bootstrap.Collapse.getOrCreateInstance(orderCollapse);
+                bsOrderCollapse.show();
+
+                setTimeout(() => {
+                    const targetCard = orderCollapse.closest('.order-group-card');
+                    if (targetCard) {
+                        targetCard.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
+                }, 300);
+            }
+
+            // Clear the storage so it doesn't trigger on subsequent normal page loads
+            sessionStorage.removeItem('reopenOrderId');
+        }
+    });
 </script>
