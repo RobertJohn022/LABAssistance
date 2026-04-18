@@ -4,20 +4,20 @@ if (!empty($groupedOrders)):
         foreach ($group['orders'] as $order_id => $order):
             $displayStatus = $order['order_status'];
 
-            $allAwaiting = true;
+            $allReadyForPickup = true;
             $hasLoads = (count($order['loads']) > 0);
             foreach ($order['loads'] as $l) {
-                if ($l['status'] !== 'Awaiting Pickup') {
-                    $allAwaiting = false;
+                if ($l['status'] !== 'Ready for Pickup') {
+                    $allReadyForPickup = false;
                     break;
                 }
             }
-            if ($hasLoads && $allAwaiting && $displayStatus !== 'Completed' && $displayStatus !== 'Cancelled') {
-                $displayStatus = 'Awaiting Pickup';
+            if ($hasLoads && $allReadyForPickup && $displayStatus !== 'Completed' && $displayStatus !== 'Cancelled') {
+                $displayStatus = 'Ready for Pickup';
             }
 
             $masterBadgeClass = 'bg-primary';
-            if ($displayStatus === 'Completed' || $displayStatus === 'Awaiting Pickup') {
+            if ($displayStatus === 'Completed' || $displayStatus === 'Ready for Pickup') {
                 $masterBadgeClass = 'bg-success';
             } elseif ($displayStatus === 'Cancelled') {
                 $masterBadgeClass = 'bg-danger';
@@ -60,7 +60,8 @@ if (!empty($groupedOrders)):
                                                 if ($s == 'In Queue') $badgeClass = 'bg-dark';
                                                 elseif (strpos($s, 'Washing') !== false) $badgeClass = 'bg-primary';
                                                 elseif (strpos($s, 'Drying') !== false) $badgeClass = 'bg-warning text-dark';
-                                                elseif ($s == 'Awaiting Pickup') $badgeClass = 'bg-success';
+                                                elseif (strpos($s, 'Folding') !== false) $badgeClass = 'bg-info text-dark';
+                                                elseif ($s == 'Ready for Pickup') $badgeClass = 'bg-success';
                                                 elseif ($s == 'Completed') $badgeClass = 'bg-success bg-opacity-75';
                                                 elseif ($s == 'Cancelled') $badgeClass = 'bg-danger';
                                                 ?>
@@ -350,7 +351,7 @@ endif;
         const buttonText = event.submitter ? event.submitter.innerText : '';
         let alertText = 'Moving to the next phase...';
 
-        if (buttonText.includes('Awaiting Pickup')) {
+        if (buttonText.includes('Ready for Pickup')) {
             alertText = 'Finishing up...<br><i>Sending completion report to customer...</i>';
         }
 
@@ -452,51 +453,6 @@ endif;
                     });
             });
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        function updateTimers() {
-            const timers = document.querySelectorAll('.live-timer');
-            const bars = document.querySelectorAll('.live-progress');
-            const now = new Date().getTime();
-
-            timers.forEach((timer, index) => {
-                const endTimeStr = timer.getAttribute('data-end');
-                const durationSecs = parseInt(timer.getAttribute('data-duration'));
-                if (!endTimeStr) return;
-
-                const endTime = new Date(endTimeStr).getTime();
-                const distance = endTime - now;
-                const bar = bars[index];
-
-                if (distance <= 0) {
-                    timer.innerText = "00:00 (FINISHED)";
-                    timer.classList.remove('text-danger');
-                    timer.classList.add('text-success');
-
-                    if (bar) {
-                        bar.style.width = "100%";
-                        bar.classList.remove('bg-primary', 'progress-bar-animated', 'progress-bar-striped');
-                        bar.classList.add('bg-success');
-                    }
-                } else {
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    timer.innerText =
-                        (minutes < 10 ? "0" : "") + minutes + ":" +
-                        (seconds < 10 ? "0" : "") + seconds;
-
-                    if (bar && durationSecs > 0) {
-                        const distanceSecs = distance / 1000;
-                        const progressPct = Math.max(0, Math.min(100, (1 - (distanceSecs / durationSecs)) * 100));
-                        bar.style.width = progressPct + "%";
-                    }
-                }
-            });
-        }
-        setInterval(updateTimers, 1000);
-        updateTimers();
-    });
 
     var logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
 

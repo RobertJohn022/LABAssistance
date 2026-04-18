@@ -110,33 +110,29 @@ $orderGroups = [
                 <span>LAB<span class="text-primary">Assistance</span></span>
             </span>
 
-            <!-- start of notifs -->
             <div class="d-flex align-items-center gap-2">
-    <span class="small text-muted d-none d-sm-inline">Hi,
-        <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></span>
+                <span class="small text-muted d-none d-sm-inline">Hi, <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></span>
 
-    <button class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#profileModal" title="Profile Settings">
-        <i class="bi bi-person-gear"></i>
-    </button>
+                <button class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#profileModal" title="Profile Settings">
+                    <i class="bi bi-person-gear"></i>
+                </button>
 
-    <div class="dropdown">
-        <button class="btn btn-light position-relative rounded-circle border shadow-sm p-1" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 36px; height: 36px;">
-            <i class="bi bi-bell-fill text-secondary"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size: 0.65rem;">
-                0
-            </span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" id="notifList" style="width: 320px; max-height: 400px; overflow-y: auto;">
-            <li class="dropdown-item text-center text-muted small py-3">Loading...</li>
-        </ul>
-    </div>
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative rounded-circle border shadow-sm p-1" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 36px; height: 36px;">
+                        <i class="bi bi-bell-fill text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size: 0.65rem;">
+                            0
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" id="notifList" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                        <li class="dropdown-item text-center text-muted small py-3">Loading...</li>
+                    </ul>
+                </div>
 
-    <a href="customer_login.php" class="btn btn-sm btn-outline-danger rounded-pill" title="Logout">
-        <i class="bi bi-box-arrow-right"></i>
-    </a>
-</div>
-            <!-- end of notifs -->
-
+                <a href="customer_login.php" class="btn btn-sm btn-outline-danger rounded-pill" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
         </div>
     </nav>
 
@@ -221,7 +217,7 @@ $orderGroups = [
                                                 $loadArray = [];
 
                                                 $canCancel = ($order['status'] !== 'Cancelled' && $order['status'] !== 'Completed');
-                                                $allAwaiting = true;
+                                                $allReadyForPickup = true;
                                                 $hasLoads = false;
 
                                                 while ($load = $loadsResult->fetch_assoc()) {
@@ -230,15 +226,15 @@ $orderGroups = [
                                                     if (!in_array($load['status'], ['Pending Dropoff', 'In Queue', 'Pending'])) {
                                                         $canCancel = false;
                                                     }
-                                                    if ($load['status'] !== 'Awaiting Pickup') {
-                                                        $allAwaiting = false;
+                                                    if ($load['status'] !== 'Ready for Pickup') {
+                                                        $allReadyForPickup = false;
                                                     }
                                                 }
 
                                                 // Dynamic Status Evaluation
                                                 $displayStatus = $order['status'];
-                                                if ($hasLoads && $allAwaiting && $order['status'] !== 'Completed' && $order['status'] !== 'Cancelled') {
-                                                    $displayStatus = 'Awaiting Pickup';
+                                                if ($hasLoads && $allReadyForPickup && $order['status'] !== 'Completed' && $order['status'] !== 'Cancelled') {
+                                                    $displayStatus = 'Ready for Pickup';
                                                 }
 
                                                 // Colors based on Status
@@ -251,7 +247,7 @@ $orderGroups = [
                                                 } elseif ($displayStatus === 'Cancelled') {
                                                     $statusTextColor = 'text-danger';
                                                     $masterBadgeClass = 'bg-danger';
-                                                } elseif ($displayStatus === 'Awaiting Pickup') {
+                                                } elseif ($displayStatus === 'Ready for Pickup') {
                                                     $statusTextColor = 'text-success';
                                                     $masterBadgeClass = 'bg-success';
                                                 }
@@ -317,7 +313,7 @@ $orderGroups = [
                 $loadsResult = $conn->query($loadQuery);
                 $loadArray = [];
                 $canCancel = ($order['status'] !== 'Cancelled' && $order['status'] !== 'Completed');
-                $allAwaiting = true;
+                $allReadyForPickup = true;
                 $hasLoads = false;
 
                 while ($load = $loadsResult->fetch_assoc()) {
@@ -326,19 +322,19 @@ $orderGroups = [
                     if (!in_array($load['status'], ['Pending Dropoff', 'In Queue', 'Pending'])) {
                         $canCancel = false;
                     }
-                    if ($load['status'] !== 'Awaiting Pickup') {
-                        $allAwaiting = false;
+                    if ($load['status'] !== 'Ready for Pickup') {
+                        $allReadyForPickup = false;
                     }
                 }
 
                 // Recalculate status for the modal
                 $displayStatus = $order['status'];
-                if ($hasLoads && $allAwaiting && $order['status'] !== 'Completed' && $order['status'] !== 'Cancelled') {
-                    $displayStatus = 'Awaiting Pickup';
+                if ($hasLoads && $allReadyForPickup && $order['status'] !== 'Completed' && $order['status'] !== 'Cancelled') {
+                    $displayStatus = 'Ready for Pickup';
                 }
 
                 $masterBadgeClass = 'bg-primary';
-                if ($displayStatus === 'Completed' || $displayStatus === 'Awaiting Pickup') {
+                if ($displayStatus === 'Completed' || $displayStatus === 'Ready for Pickup') {
                     $masterBadgeClass = 'bg-success';
                 } elseif ($displayStatus === 'Cancelled') {
                     $masterBadgeClass = 'bg-danger';
@@ -374,21 +370,15 @@ $orderGroups = [
                                                     $s = $load['status'];
                                                     $badgeClass = 'bg-secondary';
                                                     if ($s == 'In Queue') $badgeClass = 'bg-dark';
-                                                    elseif (strpos($s, 'Washing') !== false) $badgeClass = 'bg-primary';
-                                                    elseif (strpos($s, 'Drying') !== false) $badgeClass = 'bg-warning text-dark';
-                                                    elseif ($s == 'Awaiting Pickup') $badgeClass = 'bg-success';
+                                                    elseif ($s == 'Washing') $badgeClass = 'bg-primary';
+                                                    elseif ($s == 'Drying') $badgeClass = 'bg-warning text-dark';
+                                                    elseif ($s == 'Folding') $badgeClass = 'bg-info text-dark';
+                                                    elseif ($s == 'Ready for Pickup') $badgeClass = 'bg-success';
                                                     elseif ($s == 'Completed') $badgeClass = 'bg-success bg-opacity-75';
                                                     elseif ($s == 'Cancelled') $badgeClass = 'bg-danger';
                                                     ?>
                                                     <span class="badge <?php echo $badgeClass; ?>"><?php echo $s; ?></span>
                                                 </div>
-
-                                                <?php if (!empty($load['timer_end']) && $s !== 'Cancelled'): ?>
-                                                    <div class="d-flex justify-content-between align-items-center bg-white border rounded px-2 py-1 mt-2">
-                                                        <span class="small text-muted fw-bold"><i class="bi bi-stopwatch"></i> TIME LEFT</span>
-                                                        <span class="fw-bold text-danger live-timer" data-end="<?php echo date('c', strtotime($load['timer_end'])); ?>">--:--</span>
-                                                    </div>
-                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
@@ -600,38 +590,6 @@ $orderGroups = [
                 e.preventDefault();
                 trackOrder();
             }
-        });
-
-        // --- Live Countdown Timer Logic ---
-        document.addEventListener('DOMContentLoaded', function() {
-            function updateTimers() {
-                const timers = document.querySelectorAll('.live-timer');
-                const now = new Date().getTime();
-
-                timers.forEach(timer => {
-                    const endTimeStr = timer.getAttribute('data-end');
-                    if (!endTimeStr) return;
-
-                    const endTime = new Date(endTimeStr).getTime();
-                    const distance = endTime - now;
-
-                    if (distance <= 0) {
-                        timer.innerText = "00:00 (FINISHED)";
-                        timer.classList.remove('text-danger');
-                        timer.classList.add('text-success');
-                    } else {
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                        timer.innerText =
-                            (minutes < 10 ? "0" : "") + minutes + ":" +
-                            (seconds < 10 ? "0" : "") + seconds;
-                    }
-                });
-            }
-
-            setInterval(updateTimers, 1000);
-            updateTimers();
         });
 
         // --- Delete Account Confirm ---
