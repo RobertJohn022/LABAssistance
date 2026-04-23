@@ -5,9 +5,70 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Manager') {
     exit();
 }
 require 'backend/db_conn.php';
-$result = $conn->query("SELECT * FROM `Order` ORDER BY created_at DESC");
 
-// Group orders per month
+// Generate Report
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['generate_month_year'])) {
+    $date  = DateTime::createFromFormat('F Y', $_POST['generate_month_year']);
+    $month = (int) $date->format('m');
+    $year  = (int) $date->format('Y');
+
+    $stmt = $conn->prepare("
+        SELECT supplies_requested, final_price 
+        FROM `Order` 
+        WHERE payment_status = 'Paid'
+          AND MONTH(created_at) = ? 
+          AND YEAR(created_at)  = ?
+    ");
+    $stmt->bind_param("ii", $month, $year);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $total_orders = $total_revenue = $detergent_count = $softener_count = 0;
+    while ($row = $result->fetch_assoc()) {
+        $total_orders++;
+        $total_revenue   += (float) $row['final_price'];
+        $supplies         = strtolower($row['supplies_requested'] ?? '');
+        $detergent_count += substr_count($supplies, 'detergent');
+        $softener_count  += substr_count($supplies, 'softener');
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare("
+        INSERT INTO `sales_report` 
+            (report_month, report_year, total_orders, total_revenue, detergent_count, softener_count)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            total_orders    = VALUES(total_orders),
+            total_revenue   = VALUES(total_revenue),
+            detergent_count = VALUES(detergent_count),
+            softener_count  = VALUES(softener_count)
+    ");
+    $stmt->bind_param("iiidii", $month, $year, $total_orders, $total_revenue, $detergent_count, $softener_count);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: orders_history.php");
+    exit();
+}
+
+// Purge database month
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
+    $date  = DateTime::createFromFormat('F Y', $_POST['delete_month']);
+    $year  = $date->format('Y');
+    $month = $date->format('m');
+
+    $stmt = $conn->prepare("DELETE FROM `Order` WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?");
+    $stmt->bind_param("ss", $year, $month);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: orders_history.php");
+    exit();
+}
+
+// fetch orders by month
+
+$result = $conn->query("SELECT * FROM `Order` ORDER BY created_at DESC");
 $grouped_orders = [];
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
@@ -16,23 +77,12 @@ if ($result->num_rows > 0) {
     }
 }
 
-// Delete orders from month
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
-    $month_year = $_POST['delete_month'];
-    $date = DateTime::createFromFormat('F Y', $month_year);
-
-    if ($date) {
-        $year  = $date->format('Y');
-        $month = $date->format('m');
-
-        $stmt = $conn->prepare("DELETE FROM `Order` WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?");
-        $stmt->bind_param("ss", $year, $month);
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    header("Location: orders_history.php");
-    exit();
+// Fetcha ll existing reports
+$report_lookup = [];
+$reports = $conn->query("SELECT * FROM `sales_report`");
+while ($r = $reports->fetch_assoc()) {
+    $key = date('F Y', mktime(0, 0, 0, $r['report_month'], 1, $r['report_year']));
+    $report_lookup[$key] = $r;
 }
 ?>
 
@@ -96,19 +146,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
 
         <?php if (!empty($grouped_orders)): ?>
             <?php foreach ($grouped_orders as $month_year => $orders): ?>
+                <?php $report = $report_lookup[$month_year] ?? null; ?>
                 <div class="mb-5 d-none d-md-block">
-                    <!-- Month-Year Title -->
-                    <div class="py-3 month-title d-flex justify-content-between align-items-center">
+
+                    <!-- Month Header -->
+                    <div class="py-3 px-3 month-title d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="me-2"></i><?php echo $month_year; ?>
-                            <span class="badge bg-secondary ms-2"><?php echo count($orders); ?> order(s)</span>
+                            </i><?php echo $month_year; ?>
                         </div>
-                        <button
-                            class="btn btn-danger rounded-pill shadow-sm fw-bold px-3"
-                            onclick="confirmClear('<?php echo $month_year; ?>')">
-                            <i class="bi me-1"></i> Clear Month
-                        </button>
+                        <div class="d-flex gap-2">
+                            <!-- Generate Report button -->
+                            <button class="btn btn-sm btn-success rounded-pill fw-bold"
+                                onclick="confirmGenerate('<?php echo $month_year; ?>')">
+                                <?php echo $report ? 'Regenerate Report' : 'Generate Report'; ?>
+                            </button>
+
+                            <!-- show Clear button if report exists -->
+                            <?php if ($report): ?>
+                                <button class="btn btn-sm btn-danger rounded-pill fw-bold"
+                                    onclick="confirmClear('<?php echo $month_year; ?>')">
+                                    </i> Clear Month
+                                </button>
+                            <?php endif; ?>
+                        </div>
                     </div>
+
+                    <!-- Sales Report -->
+                    <?php if ($report): ?>
+                        <div class="d-flex flex-wrap gap-3 px-3 py-3" style="border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
+                            <div class="stat-box text-center">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Total Orders</div>
+                                <div class="fs-5 fw-bold"><?php echo $report['total_orders']; ?></div>
+                            </div>
+                            <div class="stat-box text-center">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Total Revenue</div>
+                                <div class="fs-5 fw-bold">₱<?php echo number_format($report['total_revenue'], 2); ?></div>
+                            </div>
+                            <div class="stat-box text-center">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Detergents</div>
+                                <div class="fs-5 fw-bold"><?php echo $report['detergent_count']; ?></div>
+                            </div>
+                            <div class="stat-box text-center">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Softeners</div>
+                                <div class="fs-5 fw-bold"><?php echo $report['softener_count']; ?></div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <!-- Table -->
                     <div class="overflow-hidden shadow-sm" style="border-radius: 0 0 12px 12px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
@@ -187,22 +270,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
     </div>
 
     <!-- Deletion pop-up -->
-    <div class="modal fade" id="clearModal" tabindex="-1" aria-labelledby="clearModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-content">
-            <div class="modal-body text-muted">
-                Are you sure you want to delete all orders from <strong id="modalMonthLabel"></strong>?
-                This action cannot be undone.
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">
-                    Cancel
-                </button>
-                <form method="POST" action="orders_history.php" id="clearForm">
-                    <input type="hidden" name="delete_month" id="deleteMonthInput">
-                    <button type="submit" class="btn btn-danger rounded-pill">
-                        Yes, Delete
+    <div class="modal fade" id="clearModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-muted">
+                    Delete all orders from <strong id="clearMonthLabel"></strong>?
+                    This action cannot be undone.
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">
+                        Cancel
                     </button>
-                </form>
+                    <form method="POST" action="orders_history.php">
+                        <input type="hidden" name="delete_month" id="clearMonthInput">
+                        <button type="submit" class="btn btn-danger rounded-pill fw-bold">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal fade" id="generateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        Generate Sales Report
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-muted">
+                    Generate a sales report for <strong id="generateMonthLabel"></strong>?
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <form method="POST" action="orders_history.php">
+                        <input type="hidden" name="generate_month_year" id="generateMonthInput">
+                        <button type="submit" class="btn btn-success rounded-pill fw-bold">
+                            Generate
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -221,9 +340,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
             '<i class="bi bi-chevron-down me-1"></i>';
     }
 
+    function confirmGenerate(monthYear) {
+        document.getElementById('generateMonthLabel').textContent = monthYear;
+        document.getElementById('generateMonthInput').value = monthYear;
+        new bootstrap.Modal(document.getElementById('generateModal')).show();
+    }
+
     function confirmClear(monthYear) {
-        document.getElementById('modalMonthLabel').textContent = monthYear;
-        document.getElementById('deleteMonthInput').value = monthYear;
+        document.getElementById('clearMonthLabel').textContent = monthYear;
+        document.getElementById('clearMonthInput').value = monthYear;
         new bootstrap.Modal(document.getElementById('clearModal')).show();
     }
 </script>
