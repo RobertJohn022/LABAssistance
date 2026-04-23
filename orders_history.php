@@ -6,6 +6,17 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Manager') {
 }
 require 'backend/db_conn.php';
 
+// Generate report each month
+$lastMonth = new DateTime('first day of last month');
+$m = (int)$lastMonth->format('m');
+$y = (int)$lastMonth->format('Y');
+
+$check = $conn->query("SELECT 1 FROM `sales_report` WHERE report_month = $m AND report_year = $y");
+if ($check->num_rows === 0) {
+    $_SERVER['REQUEST_METHOD'] = 'POST';
+    $_POST['generate_month_year'] = $lastMonth->format('F Y');
+}
+
 // Generate Report
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['generate_month_year'])) {
     $date  = DateTime::createFromFormat('F Y', $_POST['generate_month_year']);
