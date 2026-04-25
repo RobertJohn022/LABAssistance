@@ -140,4 +140,20 @@ CREATE TABLE `order_messages` (
   CONSTRAINT `fk_msg_user` FOREIGN KEY (`sender_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+-- --------------------------------------------------------
+-- 8.  Table structure for table `sales_report`
+-- --------------------------------------------------------
+CREATE TABLE `sales_report` (
+  `report_id`        int(11) NOT NULL AUTO_INCREMENT,
+  `report_month`     tinyint(2) NOT NULL,
+  `report_year`      year(4) NOT NULL,
+  `total_orders`     int(11) NOT NULL DEFAULT 0,
+  `total_revenue`    decimal(10,2) NOT NULL DEFAULT 0.00,
+  `detergent_count`  int(11) NOT NULL DEFAULT 0,
+  `softener_count`   int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`report_id`),
+  UNIQUE KEY `unique_month_year` (`report_month`, `report_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 COMMIT;
