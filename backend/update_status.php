@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $upd->bind_param("s", $order_id);
         $upd->execute();
 
-        $conn->query("UPDATE `Order` SET status = 'Completed' WHERE order_id = '$order_id'");
+        $conn->query("UPDATE `Order` SET status = 'Completed', payment_status = 'Paid'WHERE order_id = '$order_id'");
         $conn->query("INSERT INTO `Order_Logs` (order_id, log_message) VALUES ('$order_id', '$employee_name completed the order. Customer picked up the laundry.')");
 
         // --- Email Thank You / Pickup Confirmation ---
@@ -50,12 +50,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $mail = new PHPMailer(true);
                 try {
                     $mail->isSMTP();
-                    $mail->Host       = 'smtp.gmail.com';
-                    $mail->SMTPAuth   = true;
-                    $mail->Username   = 'sevillaralph1504@gmail.com';
-                    $mail->Password   = 'wagc ultm nqrk hnfp';
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'sevillaralph1504@gmail.com';
+                    $mail->Password = 'wagc ultm nqrk hnfp';
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port       = 587;
+                    $mail->Port = 587;
 
                     $mail->setFrom('sevillaralph1504@gmail.com', 'LABAssistance Support');
                     $mail->addAddress($customerEmail);
@@ -136,12 +136,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $mail = new PHPMailer(true);
                             try {
                                 $mail->isSMTP();
-                                $mail->Host       = 'smtp.gmail.com';
-                                $mail->SMTPAuth   = true;
-                                $mail->Username   = 'sevillaralph1504@gmail.com';
-                                $mail->Password   = 'wagc ultm nqrk hnfp';
+                                $mail->Host = 'smtp.gmail.com';
+                                $mail->SMTPAuth = true;
+                                $mail->Username = 'sevillaralph1504@gmail.com';
+                                $mail->Password = 'wagc ultm nqrk hnfp';
                                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                                $mail->Port       = 587;
+                                $mail->Port = 587;
 
                                 $mail->setFrom('sevillaralph1504@gmail.com', 'LABAssistance Support');
                                 $mail->addAddress($customerEmail);

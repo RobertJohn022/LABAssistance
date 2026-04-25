@@ -74,8 +74,6 @@ CREATE TABLE `order` (
   `final_price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `payment_status` enum('Unpaid','Paid') NOT NULL DEFAULT 'Unpaid',
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `timer_end` datetime DEFAULT NULL,
-  `current_phase` varchar(50) DEFAULT 'Pending',
   `status` varchar(50) NOT NULL DEFAULT 'Pending',
   PRIMARY KEY (`order_id`),
   KEY `customer_id` (`customer_id`),
