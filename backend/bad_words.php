@@ -11,6 +11,9 @@ return [
     'dick',
     'bastard',
     'damn',
+    'pussy',
+    'ass',
+
 
     // Filipino / Tagalog
     'putangina',
@@ -28,6 +31,10 @@ return [
     'bilat',
     'burat',
     'iyot',
-    'yawa'
+    'yawa',
+    'bwiset',
+    'bwisit',
+    'tanga'
+
 
 ];
