@@ -24,6 +24,10 @@ return [
     'puta',
     'ulol',
     'pakyu',
-    'kantot'
+    'kantot',
+    'bilat',
+    'burat',
+    'iyot',
+    'yawa'
 
 ];
