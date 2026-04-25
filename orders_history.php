@@ -8,8 +8,8 @@ require 'backend/db_conn.php';
 
 // Generate report each month
 $lastMonth = new DateTime('first day of last month');
-$m = (int)$lastMonth->format('m');
-$y = (int)$lastMonth->format('Y');
+$m = (int) $lastMonth->format('m');
+$y = (int) $lastMonth->format('Y');
 
 $check = $conn->query("SELECT 1 FROM `sales_report` WHERE report_month = $m AND report_year = $y");
 if ($check->num_rows === 0) {
@@ -19,9 +19,9 @@ if ($check->num_rows === 0) {
 
 // Generate Report
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['generate_month_year'])) {
-    $date  = DateTime::createFromFormat('F Y', $_POST['generate_month_year']);
+    $date = DateTime::createFromFormat('F Y', $_POST['generate_month_year']);
     $month = (int) $date->format('m');
-    $year  = (int) $date->format('Y');
+    $year = (int) $date->format('Y');
 
     $stmt = $conn->prepare("
         SELECT supplies_requested, final_price 
@@ -37,10 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['generate_month_year'
     $total_orders = $total_revenue = $detergent_count = $softener_count = 0;
     while ($row = $result->fetch_assoc()) {
         $total_orders++;
-        $total_revenue   += (float) $row['final_price'];
-        $supplies         = strtolower($row['supplies_requested'] ?? '');
+        $total_revenue += (float) $row['final_price'];
+        $supplies = strtolower($row['supplies_requested'] ?? '');
         $detergent_count += substr_count($supplies, 'detergent');
-        $softener_count  += substr_count($supplies, 'softener');
+        $softener_count += substr_count($supplies, 'softener');
     }
     $stmt->close();
 
@@ -64,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['generate_month_year'
 
 // Purge database month
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_month'])) {
-    $date  = DateTime::createFromFormat('F Y', $_POST['delete_month']);
-    $year  = $date->format('Y');
+    $date = DateTime::createFromFormat('F Y', $_POST['delete_month']);
+    $year = $date->format('Y');
     $month = $date->format('m');
 
     $stmt = $conn->prepare("DELETE FROM `Order` WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?");
@@ -131,17 +131,20 @@ while ($r = $reports->fetch_assoc()) {
 
     <nav class="navbar navbar-dark bg-dark shadow-sm sticky-top">
         <div class="container">
-            <a href="manager_dashboard.php" class="navbar-brand fw-bold d-flex align-items-center gap-2 text-decoration-none text-white">
+            <a href="manager_dashboard.php"
+                class="navbar-brand fw-bold d-flex align-items-center gap-2 text-decoration-none text-white">
                 <img src="assets/labaratory_logo_white.png" alt="LABAssistance Logo" style="height: 28px; width: auto;">
                 <span>LAB<span class="text-primary">Assistance</span></span>
             </a>
 
             <div class="d-flex align-items-center gap-2">
-                <span class="btn btn-sm btn-light border shadow-sm rounded-pill d-none d-sm-inline pe-none">
-                    <i class="bi bi-person-circle text-primary me-1"></i> Hi, <?php echo htmlspecialchars($_SESSION['first_name']); ?>
+                <span class="btn btn-sm btn-light border shadow-sm rounded-pill d-sm-inline pe-none">
+                    <i class="bi bi-person-circle text-primary me-1"></i> Hi,
+                    <?php echo htmlspecialchars($_SESSION['first_name']); ?>
                 </span>
 
-                <a href="manager_dashboard.php" class="btn btn-sm btn-outline-info rounded-pill" title="Return to Dashboard">
+                <a href="manager_dashboard.php" class="btn btn-sm btn-outline-info rounded-pill"
+                    title="Return to Dashboard">
                     <i class="bi bi-house-door"></i>
                 </a>
 
@@ -158,7 +161,7 @@ while ($r = $reports->fetch_assoc()) {
         <?php if (!empty($grouped_orders)): ?>
             <?php foreach ($grouped_orders as $month_year => $orders): ?>
                 <?php $report = $report_lookup[$month_year] ?? null; ?>
-                <div class="mb-5 d-none d-md-block">
+                <div class="mb-5 d-md-block">
 
                     <!-- Month Header -->
                     <div class="py-3 px-3 month-title d-flex justify-content-between align-items-center">
@@ -184,7 +187,8 @@ while ($r = $reports->fetch_assoc()) {
 
                     <!-- Sales Report -->
                     <?php if ($report): ?>
-                        <div class="d-flex flex-wrap gap-3 px-3 py-3" style="border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
+                        <div class="d-flex flex-wrap gap-3 px-3 py-3"
+                            style="border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
                             <div class="stat-box text-center">
                                 <div class="text-muted small text-uppercase fw-bold mb-1">Total Orders</div>
                                 <div class="fs-5 fw-bold"><?php echo $report['total_orders']; ?></div>
@@ -205,7 +209,8 @@ while ($r = $reports->fetch_assoc()) {
                     <?php endif; ?>
 
                     <!-- Table -->
-                    <div class="overflow-hidden shadow-sm" style="border-radius: 0 0 12px 12px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
+                    <div class="overflow-hidden shadow-sm"
+                        style="border-radius: 0 0 12px 12px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-custom-header">
                                 <tr class="small text-uppercase text-muted">
@@ -231,8 +236,7 @@ while ($r = $reports->fetch_assoc()) {
                                         <td><?php echo $row['payment_status']; ?></td>
                                         <td><?php echo $row['status']; ?></td>
                                         <td>
-                                            <button
-                                                class="btn btn-sm btn-outline-secondary rounded-pill"
+                                            <button class="btn btn-sm btn-outline-secondary rounded-pill"
                                                 onclick="toggleDetails('details-<?php echo $row['order_id']; ?>', this)">
                                                 <i class="bi bi-chevron-down me-1"></i>
                                             </button>
@@ -240,7 +244,8 @@ while ($r = $reports->fetch_assoc()) {
                                     </tr>
 
                                     <!-- Hidden Detail Row -->
-                                    <tr id="details-<?php echo $row['order_id']; ?>" style="display: none; background-color: #f8f9fa;">
+                                    <tr id="details-<?php echo $row['order_id']; ?>"
+                                        style="display: none; background-color: #f8f9fa;">
                                         <td colspan="9">
                                             <div class="px-3 py-2 d-flex flex-wrap gap-4 small">
                                                 <div>
