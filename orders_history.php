@@ -211,67 +211,69 @@ while ($r = $reports->fetch_assoc()) {
                     <!-- Table -->
                     <div class="overflow-hidden shadow-sm"
                         style="border-radius: 0 0 12px 12px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-custom-header">
-                                <tr class="small text-uppercase text-muted">
-                                    <th>Date Ordered</th>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Services Requested</th>
-                                    <th>Service Fee</th>
-                                    <th>Payment Status</th>
-                                    <th>Laundry Status</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($orders as $row): ?>
-                                    <!-- Main Row -->
-                                    <tr>
-                                        <td><?php echo date('M d, g:i A', strtotime($row['created_at'])); ?></td>
-                                        <td><?php echo $row['order_id']; ?></td>
-                                        <td><?php echo $row['customer_name']; ?></td>
-                                        <td><?php echo $row['services_requested']; ?></td>
-                                        <td>₱<?php echo $row['final_price']; ?></td>
-                                        <td><?php echo $row['payment_status']; ?></td>
-                                        <td><?php echo $row['status']; ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-secondary rounded-pill"
-                                                onclick="toggleDetails('details-<?php echo $row['order_id']; ?>', this)">
-                                                <i class="bi bi-chevron-down me-1"></i>
-                                            </button>
-                                        </td>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-custom-header">
+                                    <tr class="small text-uppercase text-muted">
+                                        <th>Date Ordered</th>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Services Requested</th>
+                                        <th>Service Fee</th>
+                                        <th>Payment Status</th>
+                                        <th>Laundry Status</th>
+                                        <th></th>
                                     </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($orders as $row): ?>
+                                        <!-- Main Row -->
+                                        <tr>
+                                            <td><?php echo date('M d, g:i A', strtotime($row['created_at'])); ?></td>
+                                            <td><?php echo $row['order_id']; ?></td>
+                                            <td><?php echo $row['customer_name']; ?></td>
+                                            <td><?php echo $row['services_requested']; ?></td>
+                                            <td>₱<?php echo $row['final_price']; ?></td>
+                                            <td><?php echo $row['payment_status']; ?></td>
+                                            <td><?php echo $row['status']; ?></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill"
+                                                    onclick="toggleDetails('details-<?php echo $row['order_id']; ?>', this)">
+                                                    <i class="bi bi-chevron-down me-1"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
 
-                                    <!-- Hidden Detail Row -->
-                                    <tr id="details-<?php echo $row['order_id']; ?>"
-                                        style="display: none; background-color: #f8f9fa;">
-                                        <td colspan="9">
-                                            <div class="px-3 py-2 d-flex flex-wrap gap-4 small">
-                                                <div>
-                                                    <span class="text-muted text-uppercase fw-bold">Customer</span><br>
-                                                    ID: <?php echo $row['customer_id']; ?><br>
-                                                    Name: <?php echo $row['customer_name']; ?>
+                                        <!-- Hidden Detail Row -->
+                                        <tr id="details-<?php echo $row['order_id']; ?>"
+                                            style="display: none; background-color: #f8f9fa;">
+                                            <td colspan="9">
+                                                <div class="px-3 py-2 d-flex flex-wrap gap-4 small">
+                                                    <div>
+                                                        <span class="text-muted text-uppercase fw-bold">Customer</span><br>
+                                                        ID: <?php echo $row['customer_id']; ?><br>
+                                                        Name: <?php echo $row['customer_name']; ?>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted text-uppercase fw-bold">Services</span><br>
+                                                        Services: <?php echo $row['services_requested']; ?><br>
+                                                        Supplies: <?php echo $row['supplies_requested']; ?><br>
+                                                        Bags: <?php echo $row['bag_counts']; ?><br>
+                                                        Note: <?php echo $row['customer_note']; ?>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted text-uppercase fw-bold">Pricing</span><br>
+                                                        Estimate: ₱<?php echo $row['estimated_price']; ?><br>
+                                                        Additional: ₱<?php echo $row['additional_fees']; ?><br>
+                                                        <strong>Final: ₱<?php echo $row['final_price']; ?></strong>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <span class="text-muted text-uppercase fw-bold">Services</span><br>
-                                                    Services: <?php echo $row['services_requested']; ?><br>
-                                                    Supplies: <?php echo $row['supplies_requested']; ?><br>
-                                                    Bags: <?php echo $row['bag_counts']; ?><br>
-                                                    Note: <?php echo $row['customer_note']; ?>
-                                                </div>
-                                                <div>
-                                                    <span class="text-muted text-uppercase fw-bold">Pricing</span><br>
-                                                    Estimate: ₱<?php echo $row['estimated_price']; ?><br>
-                                                    Additional: ₱<?php echo $row['additional_fees']; ?><br>
-                                                    <strong>Final: ₱<?php echo $row['final_price']; ?></strong>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
